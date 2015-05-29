@@ -18,7 +18,8 @@
 extern "C" {
 #endif
     
-
+// 一个类型最多成员个数
+#define CCMaxMemberCount 64 
 // 结构体类型的最多格式
 #define CCMaxTypeCount 1000
 
@@ -42,6 +43,7 @@ typedef struct cctypemeta {
     int index;
     
     struct dict *members;
+    struct ccmembermeta *indexmembers[CCMaxMemberCount];
     cctypemeta_init init;
 }cctypemeta;
 
@@ -148,13 +150,14 @@ char *ccunparseto(cctypemeta *meta, void *value);
         .type=#mtype, \
         .size=sizeof(mtype), \
         .members=NULL, \
+        .indexmembers={0},\
         .index=0, \
         .init=__cc_init_##mtype\
     };
 
 // 复杂类型
 #define __ccdeclaretypebegin(mtype) \
-    typedef struct mtype { _ccjson_obj(64);
+    typedef struct mtype { _ccjson_obj(CCMaxMemberCount);
 
 // 声明成员
 #define __ccdeclaremember(mtype, htype, m) \
@@ -187,6 +190,7 @@ char *ccunparseto(cctypemeta *meta, void *value);
         .type=#mtype, \
         .size=sizeof(mtype), \
         .members=NULL, \
+        .indexmembers={0},\
         .index=0, \
         .init=__cc_init_##mtype\
     };

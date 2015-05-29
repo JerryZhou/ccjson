@@ -209,11 +209,15 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
     }
     // auto member index
     unsigned long size = dictSize(meta->members);
-    if (member->idx < size) {
-        member->idx = (int)size;
+    if (member->idx < (int)size) {
+        member->idx = (int)size + 1;
     }
     
+    // 加入字典
     dictAdd(meta->members, (void*)member->name, member);
+
+    // 顺序查找
+    meta->indexmembers[member->idx] = member;
 }
 
 // 创建一个类型meta

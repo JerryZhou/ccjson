@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
@@ -149,7 +150,7 @@ char *ccunparseto(cctypemeta *meta, void *value);
         .members=NULL, \
         .index=0, \
         .init=__cc_init_##mtype\
-    }
+    };
 
 // 复杂类型
 #define __ccdeclaretypebegin(mtype) \
@@ -188,19 +189,19 @@ char *ccunparseto(cctypemeta *meta, void *value);
         .members=NULL, \
         .index=0, \
         .init=__cc_init_##mtype\
-    }
+    };
 
 // 实现成员类型
 #define __ccimplementmember(mtype, ntype, member)  do {\
     ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
                         offsetof(mtype, member), _midx++, 0); \
-    ccaddmember(meta, _member); } while(0)
+    ccaddmember(meta, _member); } while(0);
 
 // 实现成员数组类型
 #define __ccimplementmember_array(mtype,  ntype, member)  do {\
     ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
                         offsetof(mtype, member), _midx++, 1); \
-    ccaddmember(meta, _member); } while(0)
+    ccaddmember(meta, _member); } while(0);
 
     
 // 实现基础对象
@@ -211,18 +212,18 @@ typedef double ccnumber;
 typedef int ccint;
 
 // 声明基础类型
-__ccdeclaretype(ccint);
-__ccdeclaretype(ccnumber);
-__ccdeclaretype(ccstring);
-__ccdeclaretype(ccbool);
+__ccdeclaretype(ccint)
+__ccdeclaretype(ccnumber)
+__ccdeclaretype(ccstring)
+__ccdeclaretype(ccbool)
 
 // 声明复杂类型
-__ccdeclaretypebegin(ccconfig);
-__ccdeclaremember(ccconfig, ccint, ver);
-__ccdeclaremember(ccconfig, ccbool, has);
-__ccdeclaremember(ccconfig, ccstring, detail);
-__ccdeclaremember_array(ccconfig, ccint, skips);
-__ccdeclaretypeend(ccconfig);
+__ccdeclaretypebegin(ccconfig)
+__ccdeclaremember(ccconfig, ccint, ver)
+__ccdeclaremember(ccconfig, ccbool, has)
+__ccdeclaremember(ccconfig, ccstring, detail)
+__ccdeclaremember_array(ccconfig, ccint, skips)
+__ccdeclaretypeend(ccconfig)
     
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

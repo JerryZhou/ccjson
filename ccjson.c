@@ -487,17 +487,17 @@ char *ccunparseto(cctypemeta *meta, void *value) {
 
 // 实现基础对象
 // ******************************************************************************
-__ccimplementtype(ccint);
-__ccimplementtype(ccnumber);
-__ccimplementtype(ccstring);
-__ccimplementtype(ccbool);
+__ccimplementtype(ccint)
+__ccimplementtype(ccnumber)
+__ccimplementtype(ccstring)
+__ccimplementtype(ccbool)
 
 
 // 声明复杂类型
-__ccimplementtypebegin(ccconfig);
-__ccimplementmember(ccconfig, ccint, ver);
-__ccimplementmember(ccconfig, ccbool, has);
-__ccimplementmember(ccconfig, ccstring, detail);
-__ccimplementmember_array(ccconfig, ccint, skips);
-__ccimplementtypeend(ccconfig);
+__ccimplementtypebegin(ccconfig)
+__ccimplementmember(ccconfig, ccint, ver)
+__ccimplementmember(ccconfig, ccbool, has)
+__ccimplementmember(ccconfig, ccstring, detail)
+__ccimplementmember_array(ccconfig, ccint, skips)
+__ccimplementtypeend(ccconfig)
 

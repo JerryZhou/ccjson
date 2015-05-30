@@ -24,19 +24,19 @@ extern "C" {
 #define CCMaxTypeCount 1000
 
 // ******************************************************************************
-//  申请文本缓存区域
+//  申请文本缓存区域, 以0结尾, 返回的字符串需要调用 cc_free
 char *cc_alloc(size_t size);
 // 释放文本缓冲区
 void cc_free(char *c);
-// 文本缓冲区的长度
+// 文本缓冲区的长度, 不包括结尾的0
 size_t cc_len(char *c); 
-// 复制一份字符串
+// 复制一份字符串, 返回的字符串需要调用 cc_free
 char *cc_dup(const char* src);
 
 // ******************************************************************************
-// 读取文本文件 
+// 读取文本文件 , 返回的字符串需要调用 cc_free
 char * cc_read_file(const char* fn);
-// 写文件
+// 写文件, content 必须是 cc_alloc, cc_dup, cc_read_file 返回的缓冲区
 size_t cc_write_file(char* content, const char* fn);
 
 // ******************************************************************************

@@ -8,5 +8,29 @@
 
     具体做法参考 : cjsonstruct.h cjsonstruct.c cjsonstruct.inl
 
+# 具体用法如下：
 
+### 定义结构体
+    __cc_type_begin(cstruct)
+        __cc_type_member(cstruct, ccstring, str) 
+        __cc_type_member(cstruct, int, i) 
+        __cc_type_member_array(cstruct, int, array) 
+    __cc_type_end(cstruct)
+
+### 把JSON 解析到结构体
+    const char* json = "{\"str\":\"hello\", \"i\":123, \"array\":[1, 2, 3]}";
+    cstruct c = {0}
+    ccparsefrom(&cctypeofmeta(cstruct), &c, json);
+    ccobjrelease(&c);
+
+### 把结构体打印成JSON
+    cstruct c = {0}
+    c.str = (char*)"hello";    
+    ccobjset(&c, cctypeofmindex(cstruct, str));
+
+    c.i = 2;
+    ccobjset(&c, cctypeofmindex(cstruct, i));
+
+    char *json = ccunparseto(&cctypeofmeta(cstruct), &c);
+    cc_free(json)
 

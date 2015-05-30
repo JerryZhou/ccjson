@@ -34,3 +34,10 @@
     char *json = ccunparseto(&cctypeofmeta(cstruct), &c);
     cc_free(json)
 
+### 封装的api: iccalloc, iccrelease, iccfree, iccparse, iccunparse 的用法
+    // 申请对象
+    cstruct *c = iccalloc(cstruct);
+    // 从JSON 初始化对象
+    iccparse(c, "{"\"i\":123}");
+    // 释放对象
+    iccfree(c);

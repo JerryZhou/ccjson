@@ -1957,9 +1957,8 @@ typedef struct __cc_content {
 
 //  申请文本缓存区域
 char *cc_alloc(size_t size) {
-    __cc_content *content = (__cc_content*)malloc(size + sizeof(__cc_content) + 1);
+    __cc_content *content = (__cc_content*)calloc(1, size + sizeof(__cc_content) + 1);
     content->size = size;
-    content->content[size] = 0;
     return content->content;
 }
 

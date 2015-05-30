@@ -138,7 +138,7 @@ int ccinittypemeta(cctypemeta *meta);
 cctypemeta *ccgettypemeta(const char* type);
 cctypemeta *ccgettypemetaof(int index);
 
-// 释放结构体相关资源
+// 释放结构体相关资源: 有调用过ccparsefrom 的都需要调用这个函数来释放资源
 void ccobjrelease(cctypemeta *meta, void *p);
 
 // 从字符串解析
@@ -146,6 +146,35 @@ bool ccparsefrom(cctypemeta *meta, void *value, const char *json);
 
 // 把对象解析到字符串： 输出的字符串自己负责释放 free()
 char *ccunparseto(cctypemeta *meta, void *value);
+
+
+// ******************************************************************************
+// 辅助函数: 生成一个可以用来进行序列化的对象, 然后可以调用ccobjfree 释放内存
+// 生成对象
+void *ccjsonobjalloc(cctypemeta* meta);
+
+// 释放对象拥有的资源
+void ccjsonobjrelease(void *p);
+
+// 释放对象
+void ccjsonobjfree(void *p);
+
+// 从json序列化对象
+bool ccjsonobjparsefrom(void *p, const char* json);
+
+// 把对象序列化到json
+char* ccjsonobjunparseto(void *p);
+
+// 对象申请宏
+#define iccalloc(type) ((type*)ccjsonobjalloc(&cctypeofmeta(type)))
+// 对象资源释放
+#define iccrelease(p) ccjsonobjrelease(p)
+// 对象释放宏
+#define iccfree(p) ccjsonobjfree(p)
+// json转对象
+#define iccparse(p, json) ccjsonobjparsefrom(p, json)
+// 对象转json
+#define iccunparse(p) ccjsonobjunparseto(p) 
 
 // ******************************************************************************
 // 辅助宏：用来创建各种元信息
@@ -168,7 +197,7 @@ char *ccunparseto(cctypemeta *meta, void *value);
 
 // 实现元信息
 #define __ccimplementtype(mtype) \
-    const int cctypeofmcount(mtype) = 1;\
+    const int cctypeofmcount(mtype) = 0;\
     const char* cctypeofname(mtype) = #mtype; \
     static int __cc_init_##mtype(cctypemeta * meta) {\
         if(meta->index) { \

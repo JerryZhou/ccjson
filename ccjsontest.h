@@ -56,6 +56,17 @@ SP_CASE(ccjson, eg1) {
 }
 
 SP_CASE(ccjson, eg2) {
+    config_date *date = iccalloc(config_date);
+
+    char * json = cc_read_file("date.json");
+    iccparse(date, json);
+
+    print("date: %s - %s\n", date->invaliddate, date->validdate);
+
+    cc_free(json);
+
+    iccfree(date);
+
     SP_TRUE(1);
 }
 

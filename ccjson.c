@@ -2502,6 +2502,44 @@ char *ccunparseto(cctypemeta *meta, void *value) {
     return content;
 }
 
+// ******************************************************************************
+// 生成对象
+void *ccjsonobjalloc(cctypemeta* meta) {
+    ccinittypemeta(meta);
+
+    ccjson_obj *obj = (ccjson_obj*)cc_alloc(meta->size);
+    obj->__index = meta->index;
+    return obj;
+}
+
+// 释放对象拥有的资源
+void ccjsonobjrelease(void *p) {
+    cccheck(p);
+    ccjson_obj *obj = (ccjson_obj*)p;
+    cctypemeta *meta = ccgettypemetaof(obj->__index);
+    ccobjrelease(meta, obj);
+}
+
+// 释放对象
+void ccjsonobjfree(void *p) {
+    ccjsonobjrelease(p);
+    cc_free((char*)p);
+}
+
+// 从json序列化对象
+bool ccjsonobjparsefrom(void *p, const char* json) {
+    ccjson_obj *obj = (ccjson_obj*)p;
+    cctypemeta *meta = ccgettypemetaof(obj->__index);
+    return ccparsefrom(meta, p, json);
+}
+
+// 把对象序列化到json
+char* ccjsonobjunparseto(void *p) {
+    ccjson_obj *obj = (ccjson_obj*)p;
+    cctypemeta *meta = ccgettypemetaof(obj->__index);
+    return ccunparseto(meta, p);
+}
+
 // 实现基础对象
 // ******************************************************************************
 

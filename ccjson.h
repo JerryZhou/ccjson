@@ -24,6 +24,22 @@ extern "C" {
 #define CCMaxTypeCount 1000
 
 // ******************************************************************************
+//  申请文本缓存区域
+char *cc_alloc(size_t size);
+// 释放文本缓冲区
+void cc_free(char *c);
+// 文本缓冲区的长度
+size_t cc_len(char *c); 
+// 复制一份字符串
+char *cc_dup(const char* src);
+
+// ******************************************************************************
+// 读取文本文件 
+char * cc_read_file(const char* fn);
+// 写文件
+size_t cc_write_file(char* content, const char* fn);
+
+// ******************************************************************************
 // 类型的元信息
 struct cctypemeta;
 // 成员的元信息

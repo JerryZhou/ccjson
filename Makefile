@@ -13,6 +13,8 @@ main.o: dict.h cJSON.h dict.c cJSON.c ccjson.h ccjson.c ccjsontest.h cjsonstruct
 
 cjsonstruct.o: cjsonstruct.h cjsonstruct.inl cjsonstruct.c
 
+ccjson.o: ccjson.h cJSON.h cJSON.c dict.h dict.c
+
 .PHONY:clean
 clean:
 	rm $(OBJS) $(all)

@@ -24,7 +24,7 @@ int main(int argc, const char** argv){
     {
         char * xxjson = ccunparseto(&cctypeofmeta(ccconfig), &config);
         printf("unparse : %s \n", xxjson);
-        free(xxjson);
+        cc_free(xxjson);
     }
     
     ccobjrelease(&cctypeofmeta(ccconfig), &config);

@@ -20,6 +20,75 @@
 #define __ccmalloc(type) (type*)calloc(1, sizeof(type));
 
 // ******************************************************************************
+// 文本缓冲区
+typedef struct __cc_content {
+    size_t size;
+    char content[];
+}__cc_content;
+
+//  申请文本缓存区域
+char *cc_alloc(size_t size) {
+    __cc_content *content = (__cc_content*)malloc(size + sizeof(__cc_content) + 1);
+    content->size = size;
+    content->content[size] = 0;
+    return content->content;
+}
+
+// 释放文本缓冲区
+void cc_free(char *c) {
+    cccheck(c);
+    __cc_content *content = (__cc_content*)(c - sizeof(__cc_content));
+    free(content);
+}
+
+// 文本长度
+size_t cc_len(char *c) {
+    cccheckret(c, 0);
+    __cc_content *content = (__cc_content*)(c - sizeof(__cc_content));
+    return content->size;
+}
+
+// 生成一个填满字符缓冲区
+char *cc_dup(const char* src) {
+    cccheckret(src, NULL);
+    size_t len = strlen(src);
+    char* content = cc_alloc(len);
+    memcpy(content, src, len);
+    return content;
+}
+
+// ******************************************************************************
+// 读取文本文件 
+char * cc_read_file(const char* fn) {
+    char *content = NULL;
+    size_t filesize = 0;
+    FILE *file = 0;
+
+    file = fopen(fn, "r");
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        filesize = ftell(file);
+        rewind(file);
+
+        content = cc_alloc(filesize);
+        fread(content, 1, filesize, file);
+        fclose(file);
+    }
+    return content;
+}
+
+// 写文件
+size_t cc_write_file(char* content, const char* fn) {
+    size_t write = 0;
+    FILE *file = fopen(fn, "w");
+    if (file) {
+        write = fwrite(content, 1, cc_len(content), file);
+        fclose(file);
+    }
+    return write;
+}
+
+// ******************************************************************************
 // 自定义字典
 /* ----------------------- StringCopy Hash Table Type ------------------------*/
 
@@ -300,7 +369,7 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
             cccheckret(meta->type == cctypeofname(ccstring), has);
             ccstring *cc = (ccstring*)value;
             if (json->valuestring) {
-                *cc = strdup(json->valuestring);
+                *cc = cc_dup(json->valuestring);
             } else {
                 *cc = NULL;
             }
@@ -375,7 +444,11 @@ cJSON *ccunparse(cctypemeta *meta, void *value) {
         obj = cJSON_CreateNumber(*n);
     } else if(meta->type == cctypeofname(ccstring)) {
         ccstring *s = (ccstring *)value;
-        obj = cJSON_CreateString(*s);
+        if(*s) {
+            obj = cJSON_CreateString(*s);
+        }else {
+            obj = cJSON_CreateNull();
+        }
     } else {
       // todo: @@
     }
@@ -440,7 +513,7 @@ void ccobjrelease(cctypemeta *meta, void *value) {
     } else if(meta->type == cctypeofname(ccstring)) {
         ccstring * s = (ccstring *)value;
         if (*s) {
-            free(*s);
+            cc_free(*s);
             *s = NULL;
         }
     } else {
@@ -463,6 +536,7 @@ bool ccobjreleasemember(ccmembermeta *mmeta, void *value) {
                 ccobjrelease(meta, v + i * meta->size);
             }
             ccarrayfree(v);
+            *arrayvalue = NULL;
         }
         *arrayvalue = NULL;
     }else {
@@ -483,10 +557,13 @@ bool ccparsefrom(cctypemeta *meta, void *value, const char *json) {
 // 解析到字符串
 char *ccunparseto(cctypemeta *meta, void *value) {
     char *str = NULL;
+    char *content = NULL;
     cJSON *json = ccunparse(meta, value);
     str = cJSON_Print(json);
     cJSON_Delete(json);
-    return str;
+    content = cc_dup(str);
+    free(str);
+    return content;
 }
 
 // 实现基础对象

@@ -6,7 +6,7 @@
     放到一个.inl 文件里面，定义协议结构体
     然后顺便把结构体的定义和实现合并了，并定义好成员索引
 
-    具体做法参考 : cjsonstruct.h cjsonstruct.c cjsonstruct.inl
+    具体做法参考 : ccjsonstruct.h ccjsonstruct.c ccjsonstruct.inl
 
 # 具体用法如下：
 

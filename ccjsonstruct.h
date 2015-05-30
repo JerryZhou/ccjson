@@ -8,12 +8,12 @@ extern "C" {
 #endif
 
 // 声明成员索引
-#define __cc_type_begin(type) typedef enum __cc_index_##type {
-#define __cc_type_member(type, membertype, member) __cc_index_##type##_##member,
-#define __cc_type_member_array(type, membertype, member) __cc_index_##type##_##member,
-#define __cc_type_end(type) __cc_index_max_##type } __cc_index_##type ;
+#define __cc_type_begin __ccdeclareindexbegin
+#define __cc_type_member __ccdeclareindexmember
+#define __cc_type_member_array __ccdeclareindexmember_array
+#define __cc_type_end __ccdeclareindexend
 
-#include "cjsonstruct.inl"
+#include "ccjsonstruct.inl"
 
 #undef __cc_type_begin
 #undef __cc_type_member
@@ -26,7 +26,7 @@ extern "C" {
 #define __cc_type_member_array __ccdeclaremember_array 
 #define __cc_type_end __ccdeclaretypeend
 
-#include "cjsonstruct.inl"
+#include "ccjsonstruct.inl"
 
 #undef __cc_type_begin
 #undef __cc_type_member

@@ -68,8 +68,9 @@ typedef struct cctypemeta {
     size_t size;
     int index;
     
+    int membercount;
     void *members;
-    struct ccmembermeta *indexmembers[CCMaxMemberCount];
+    struct ccmembermeta **indexmembers;
     cctypemeta_init init;
 }cctypemeta;
 
@@ -151,14 +152,23 @@ char *ccunparseto(cctypemeta *meta, void *value);
 #define cctypeofname(type) __cc_name_##type
 #define cctypeofmeta(type) __cc_meta_##type
 #define cctypeofmindex(type, mtype) __cc_index_##type##_##mtype
+#define cctypeofmcount(type) __cc_index_max_##type
+
+// 声明成员索引
+#define __ccdeclareindexbegin(type) typedef enum __cc_index_##type {
+#define __ccdeclareindexmember(type, membertype, member) __cc_index_##type##_##member,
+#define __ccdeclareindexmember_array(type, membertype, member) __cc_index_##type##_##member,
+#define __ccdeclareindexend(type) __cc_index_max_##type } __cc_index_##type ;
 
 // 声明元信息
 #define __ccdeclaretype(mtype) \
+    extern const int cctypeofmcount(mtype);\
     extern const char* cctypeofname(mtype); \
-    extern struct cctypemeta cctypeofmeta(mtype); \
+    extern struct cctypemeta cctypeofmeta(mtype);
 
 // 实现元信息
 #define __ccimplementtype(mtype) \
+    const int cctypeofmcount(mtype) = 1;\
     const char* cctypeofname(mtype) = #mtype; \
     static int __cc_init_##mtype(cctypemeta * meta) {\
         if(meta->index) { \
@@ -171,14 +181,15 @@ char *ccunparseto(cctypemeta *meta, void *value);
         .type=#mtype, \
         .size=sizeof(mtype), \
         .members=NULL, \
-        .indexmembers={0},\
+        .membercount = cctypeofmcount(mtype), \
+        .indexmembers= NULL,\
         .index=0, \
         .init=__cc_init_##mtype\
     };
 
 // 复杂类型
 #define __ccdeclaretypebegin(mtype) \
-    typedef struct mtype { _ccjson_obj(CCMaxMemberCount);
+    typedef struct mtype { _ccjson_obj(cctypeofmcount(mtype));
 
 // 声明成员
 #define __ccdeclaremember(mtype, htype, m) \
@@ -211,7 +222,8 @@ char *ccunparseto(cctypemeta *meta, void *value);
         .type=#mtype, \
         .size=sizeof(mtype), \
         .members=NULL, \
-        .indexmembers={0},\
+        .membercount = cctypeofmcount(mtype), \
+        .indexmembers= NULL,\
         .index=0, \
         .init=__cc_init_##mtype\
     };
@@ -241,6 +253,14 @@ __ccdeclaretype(ccint)
 __ccdeclaretype(ccnumber)
 __ccdeclaretype(ccstring)
 __ccdeclaretype(ccbool)
+
+// 声明类型索引
+__ccdeclareindexbegin(ccconfig)
+__ccdeclareindexmember(ccconfig, ccint, ver)
+__ccdeclareindexmember(ccconfig, ccbool, has)
+__ccdeclareindexmember(ccconfig, ccstring, detail)
+__ccdeclareindexmember_array(ccconfig, ccint, skips)
+__ccdeclareindexend(ccconfig)
 
 // 声明复杂类型
 __ccdeclaretypebegin(ccconfig)

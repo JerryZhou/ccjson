@@ -10,7 +10,7 @@
 #define cjson_ccjsontest_h
 
 #include "simpletest.h"
-#include "cjsonstruct.h"
+#include "ccjsonstruct.h"
 #include "ccjson.h"
 
 #define print printf 

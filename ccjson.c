@@ -2205,6 +2205,10 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
     if (meta->members == NULL) {
         meta->members = ccmakedict(meta);
     }
+    if (meta->indexmembers == NULL) {
+        int count = meta->membercount > 0 ? meta->membercount : CCMaxMemberCount;
+        meta->indexmembers = (ccmembermeta**)ccarraymalloc(count, sizeof(ccmembermeta*));
+    }
     // auto member index
     unsigned long size = dictSize((dict*)meta->members);
     if (member->idx < (int)size) {
@@ -2215,7 +2219,10 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
     dictAdd((dict*)meta->members, (void*)member->name, member);
 
     // 顺序查找
-    meta->indexmembers[member->idx] = member;
+    int len = ccarraylen(meta->indexmembers);
+    if (len > member->idx ) {
+        meta->indexmembers[member->idx] = member;
+    }
 }
 
 // 创建一个类型meta
@@ -2497,6 +2504,8 @@ char *ccunparseto(cctypemeta *meta, void *value) {
 
 // 实现基础对象
 // ******************************************************************************
+
+// 基础类型
 __ccimplementtype(ccint)
 __ccimplementtype(ccnumber)
 __ccimplementtype(ccstring)

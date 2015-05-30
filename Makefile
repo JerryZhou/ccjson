@@ -4,14 +4,14 @@ all=ccjson
 .PHONY:main
 main:$(all)
 
-OBJS=main.o ccjson.o cjsonstruct.o
+OBJS=main.o ccjson.o ccjsonstruct.o
 
 ccjson: $(OBJS)
 	cc $(OBJS) -o ccjson
 
-main.o: ccjson.h ccjson.c ccjsontest.h cjsonstruct.inl cjsonstruct.h cjsonstruct.c
+main.o: ccjson.h ccjson.c ccjsontest.h ccjsonstruct.inl ccjsonstruct.h ccjsonstruct.c
 
-cjsonstruct.o: cjsonstruct.h cjsonstruct.inl cjsonstruct.c
+ccjsonstruct.o: ccjsonstruct.h ccjsonstruct.inl ccjsonstruct.c
 
 .PHONY:clean
 clean:

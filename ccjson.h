@@ -141,11 +141,6 @@ int ccinittypemeta(cctypemeta *meta);
 cctypemeta *ccgettypemeta(const char* type);
 cctypemeta *ccgettypemetaof(int index);
 
-// 解析
-bool ccparse(cctypemeta *meta, void *value, struct cJSON *json);
-// 反解析
-struct cJSON *ccunparse(cctypemeta *meta, void *value);
-
 // 释放结构体相关资源
 void ccobjrelease(cctypemeta *meta, void *p);
 

@@ -1,5 +1,5 @@
 # 使用方法
-    拷贝 cJSON.h cJSON.c dict.h dict.c ccjson.h ccjson.c 
+    拷贝 ccjson.h ccjson.c 
     到自己的工程里面就可以用了
 
 # 建议集中存放自己需要序列化的结构体的定义

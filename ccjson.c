@@ -2073,7 +2073,7 @@ typedef struct ccjsonarray {
 /**
  */
 void * ccarraymalloc(size_t n, size_t size) {
-    ccjsonarray * p = (ccjsonarray*)malloc(n * size + sizeof(ccjsonarray));
+    ccjsonarray * p = (ccjsonarray*)cc_alloc(n * size + sizeof(ccjsonarray));
     p->n = n;
     p->size = size;
     return p->addr;
@@ -2084,7 +2084,7 @@ void * ccarraymalloc(size_t n, size_t size) {
 void ccarrayfree(void *array) {
     cccheck(array);
     ccjsonarray * p = (ccjsonarray*)((char*)array - sizeof(ccjsonarray));
-    free(p);
+    cc_free((char*)p);
 }
 
 /**

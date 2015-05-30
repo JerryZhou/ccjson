@@ -2110,7 +2110,7 @@ static int gtypemetascnt = 0;
 int ccobjmindex(struct cctypemeta *meta, const char* member) {
     int idx = -1;
     if (meta->members) {
-        dictEntry *entry = dictFind(meta->members, member);
+        dictEntry *entry = dictFind((dict*)meta->members, member);
         if (entry) {
             ccmembermeta *m = (ccmembermeta*)entry->v.val;
             idx = m->idx;
@@ -2206,13 +2206,13 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
         meta->members = ccmakedict(meta);
     }
     // auto member index
-    unsigned long size = dictSize(meta->members);
+    unsigned long size = dictSize((dict*)meta->members);
     if (member->idx < (int)size) {
         member->idx = (int)size + 1;
     }
     
     // 加入字典
-    dictAdd(meta->members, (void*)member->name, member);
+    dictAdd((dict*)meta->members, (void*)member->name, member);
 
     // 顺序查找
     meta->indexmembers[member->idx] = member;
@@ -2325,7 +2325,7 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
             }
             cJSON *child = json->child;
             while(child) {
-                dictEntry *entry= dictFind(meta->members, child->string);
+                dictEntry *entry= dictFind((dict*)meta->members, child->string);
                 if (entry) {
                     ccmembermeta *membermeta = (ccmembermeta*)entry->v.val;
                     if (ccparse(membermeta->type, (char*)value + membermeta->offset, child)) {
@@ -2352,7 +2352,7 @@ cJSON *ccunparse(cctypemeta *meta, void *value) {
     cJSON *obj = NULL;
     if (meta->members) {
         obj = cJSON_CreateObject();
-        dictIterator *ite = dictGetIterator(meta->members);
+        dictIterator *ite = dictGetIterator((dict*)meta->members);
         dictEntry *entry = dictNext(ite);
         while (entry) {
             ccmembermeta* member = (ccmembermeta*)entry->v.val;
@@ -2422,7 +2422,7 @@ bool ccobjreleasemember(ccmembermeta *mmeta, void *value);
 void ccobjrelease(cctypemeta *meta, void *value) {
     // 解析
     if (meta->members) {
-        dictIterator *ite = dictGetIterator(meta->members);
+        dictIterator *ite = dictGetIterator((dict*)meta->members);
         dictEntry *entry = dictNext(ite);
         while (entry) {
             ccmembermeta* member = (ccmembermeta*)entry->v.val;

@@ -58,10 +58,6 @@ size_t cc_write_file(char* content, const char* fn);
 struct cctypemeta;
 // 成员的元信息
 struct ccmembermeta;
-// 字典
-struct dict;
-// json 中间键
-struct cJSON;
 
 // 初始化函数
 typedef int (*cctypemeta_init)( struct cctypemeta *meta);
@@ -72,7 +68,7 @@ typedef struct cctypemeta {
     size_t size;
     int index;
     
-    struct dict *members;
+    void *members;
     struct ccmembermeta *indexmembers[CCMaxMemberCount];
     cctypemeta_init init;
 }cctypemeta;

@@ -1946,7 +1946,7 @@ void cJSON_Minify(char *json)
 
 #define cccheck(exp) do { if(!(exp)) { return ; } } while(0)
 #define cccheckret(exp, ret) do { if(!(exp)) { return ret; }} while(0)
-#define __ccmalloc(type) (type*)calloc(1, sizeof(type));
+#define __ccmalloc(type) (type*)cc_alloc(sizeof(type));
 
 // ******************************************************************************
 // 文本缓冲区

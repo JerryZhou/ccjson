@@ -46,6 +46,8 @@ void cc_free(char *c);
 size_t cc_len(char *c); 
 // 复制一份字符串, 返回的字符串需要调用 cc_free
 char *cc_dup(const char* src);
+// 打印内存当前状况, 并返回当前持有内存的总数
+size_t cc_mem_state();
 
 // ******************************************************************************
 // 读取文本文件 , 返回的字符串需要调用 cc_free
@@ -98,6 +100,10 @@ size_t ccarraylen(void *array);
 
 // 获取一个成员的索引
 int ccobjmindex(struct cctypemeta *meta, const char* member);
+// 获取一个类型给定索引的成员元数据
+struct ccmembermeta *ccobjmmetabyindex(struct cctypemeta *meta, int index);
+// 获取成员个数
+int ccobjmcount(struct cctypemeta *meta);
 
 // 结构体成员操作
 bool ccobjhas(void *p, int index);
@@ -140,6 +146,8 @@ cctypemeta *ccgettypemetaof(int index);
 
 // 释放结构体相关资源: 有调用过ccparsefrom 的都需要调用这个函数来释放资源
 void ccobjrelease(cctypemeta *meta, void *p);
+// 释放数组相关资源
+void ccobjreleasearray(cctypemeta* meta, void *value);
 
 // 从字符串解析
 bool ccparsefrom(cctypemeta *meta, void *value, const char *json);

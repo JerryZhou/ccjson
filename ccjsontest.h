@@ -26,7 +26,20 @@ SP_CASE(ccjson, eg0) {
 
     char *json = cc_read_file("app.json");
 
-    ccparsefrom(&cctypeofmeta(config_app), &app, json); 
+    size_t m1 = cc_mem_state();
+    print("parse 1000 times about app json\n");
+    for (int i=0; i<1000; ++i) {
+        ccparsefrom(&cctypeofmeta(config_app), &app, json); 
+    }
+    size_t m2 = cc_mem_state();
+
+    print("parse anthor 1000 times about app json\n");
+    for (int i=0; i<1000; ++i) {
+        ccparsefrom(&cctypeofmeta(config_app), &app, json); 
+    }
+    size_t m3 = cc_mem_state();
+    SP_TRUE(m2 > m1);
+    SP_EQUAL(m2, m3);
     
     cc_free(json);
 
@@ -53,6 +66,8 @@ SP_CASE(ccjson, eg1) {
 
     cc_write_file(unjson, "date.json");
     cc_free(unjson);
+
+    SP_EQUAL(ccobjmcount(&cctypeofmeta(config_date)), 2);
 }
 
 SP_CASE(ccjson, eg2) {

@@ -1948,12 +1948,36 @@ void cJSON_Minify(char *json)
 #define cccheckret(exp, ret) do { if(!(exp)) { return ret; }} while(0)
 #define __ccmalloc(type) (type*)cc_alloc(sizeof(type));
 
+// 内存标签项目
+#define __CC_JSON_OBJ  1 
+#define __CC_JSON_ARRAY 1<<1
+
 // ******************************************************************************
 // 文本缓冲区
 typedef struct __cc_content {
+    size_t flag;
     size_t size;
     char content[];
 }__cc_content;
+
+// 追寻内容的指针
+#define __to_content(p) (__cc_content*)(p - sizeof(__cc_content))
+
+// 设置标志位
+#define __cc_setflag(p, xflag)  do { \
+    __cc_content *content = __to_content(p); \
+    if (content) { content->flag |= xflag; } \
+    } while(0) 
+
+// 判断是否符合标志位
+#define __cc_hasflag(p, xflag) (p && ((__to_content(p))->flag & xflag))
+
+// 清理标志位
+#define __cc_unsetflag(p, xflag)  do { \
+    __cc_content *content = __to_content(p); \
+    if (content) { content->flag &= ~xflag; } \
+    } while(0) 
+
 
 // 内存状态
 static size_t gmemalloc = 0;
@@ -2236,8 +2260,10 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
         meta->members = ccmakedict(meta);
     }
     if (meta->indexmembers == NULL) {
-        int count = meta->membercount > 0 ? meta->membercount : CCMaxMemberCount;
-        meta->indexmembers = (ccmembermeta**)ccarraymalloc(count, sizeof(ccmembermeta*));
+        if (meta->membercount <= 0) {
+            meta->membercount = CCMaxMemberCount;
+        }
+        meta->indexmembers = (ccmembermeta**)ccarraymalloc(meta->membercount, sizeof(ccmembermeta*));
     }
     // auto member index
     unsigned long size = dictSize((dict*)meta->members);
@@ -2249,8 +2275,8 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
     dictAdd((dict*)meta->members, (void*)member->name, member);
 
     // 顺序查找
-    int len = ccarraylen(meta->indexmembers);
-    if (len > member->idx ) {
+    size_t len = ccarraylen(meta->indexmembers);
+    if ((int)len > member->idx ) {
         meta->indexmembers[member->idx] = member;
     }
 }
@@ -2550,6 +2576,13 @@ char *ccunparseto(cctypemeta *meta, void *value) {
     return content;
 }
 
+// 设置meta索引
+#define __cc_setmetaindex(p, index) do { \
+    ccjson_obj* obj = (ccjson_obj*)p; \
+    if(obj && obj->__index == index) { \
+        obj->__index = index; \
+    }} while(0)  
+
 // ******************************************************************************
 // 生成对象
 void *ccjsonobjalloc(cctypemeta* meta) {
@@ -2557,6 +2590,7 @@ void *ccjsonobjalloc(cctypemeta* meta) {
 
     ccjson_obj *obj = (ccjson_obj*)cc_alloc(meta->size);
     obj->__index = meta->index;
+    __cc_setflag(obj, __CC_JSON_OBJ);
     return obj;
 }
 
@@ -2570,7 +2604,9 @@ void ccjsonobjrelease(void *p) {
 
 // 释放对象
 void ccjsonobjfree(void *p) {
-    ccjsonobjrelease(p);
+    if (__cc_hasflag(p, __CC_JSON_OBJ) ) {
+        ccjsonobjrelease(p);
+    }
     cc_free((char*)p);
 }
 

@@ -1961,7 +1961,7 @@ typedef struct __cc_content {
 }__cc_content;
 
 // 追寻内容的指针
-#define __to_content(p) (__cc_content*)(p - sizeof(__cc_content))
+#define __to_content(p) (__cc_content*)((char*)p - sizeof(__cc_content))
 
 // 设置标志位
 #define __cc_setflag(p, xflag)  do { \

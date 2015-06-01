@@ -85,5 +85,23 @@ SP_CASE(ccjson, eg2) {
     SP_TRUE(1);
 }
 
+SP_CASE(ccjson, eg3) {
+    ccconfig *config = iccalloc(ccconfig);
+    const char* json = "{\"ver\":1, \"has\":true, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":[1, 2, 3]}";
+
+    iccparse(config, json);
+    print("config->ver: %d\n", config->ver);
+    print("config->has: %d\n", config->has);
+    SP_EQUAL(config->ver, 1);
+    SP_EQUAL(config->has, true);
+    SP_EQUAL(strcmp(config->detail, "no details") , 0);
+
+        SP_EQUAL(config->skips[0], 1);
+        SP_EQUAL(config->skips[1], 2);
+        SP_EQUAL(config->skips[2], 3);
+
+    iccfree(config);
+}
+
 
 #endif

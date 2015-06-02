@@ -124,5 +124,21 @@ SP_CASE(ccjson, eg3) {
     iccfree(config);
 }
 
+SP_CASE(ccjson, eg4) {
+    ccconfig *config = iccalloc(ccconfig);
+    const char* json = "{\"ver\":1, \"has\":null, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":[1, null, 2]}";
+    print("json %s\n", json);
+
+    iccparse(config, json);
+
+    char* unjson = iccunparse(config);
+    print("unjson %s\n", unjson);
+
+    iccfree(config);
+    iccfree(unjson);
+
+    SP_TRUE(1);
+}
+
 
 #endif

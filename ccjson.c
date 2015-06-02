@@ -2177,21 +2177,66 @@ int ccobjmcount(struct cctypemeta *meta) {
  */
 bool ccobjhas(void *p, int index) {
     ccjson_obj *obj = __ccobj(p);
-    return obj->__has[index/8] & (1 << (index%8));
+    return obj->__has[2*(index/8)] & (1 << (index%8));
 }
 
 /**
  */
 void ccobjset(void *p, int index) {
     ccjson_obj *obj = __ccobj(p);
-    obj->__has[index/8] |= (1<<(index%8));
+    // we got value
+    obj->__has[2*(index/8)] |= (1<<(index%8));
+    // unset null flag
+    obj->__has[1+2*(index/8)] &= ~(1<<(index%8));
 }
 
 /**
  */
 void ccobjunset(void *p, int index) {
    ccjson_obj *obj = __ccobj(p);
-   obj->__has[index/8] &= ~(1<<(index%8));
+   obj->__has[2*(index/8)] &= ~(1<<(index%8));
+}
+
+// 结构体成员为空的操作
+bool ccobjisnull(void *p, int index) {
+    ccjson_obj *obj = __ccobj(p);
+    return obj->__has[1+2*(index/8)] & (1 << (index%8));
+}
+
+/**
+ * */
+void ccobjsetnull(void *p, int index) {
+    ccjson_obj *obj = __ccobj(p);
+    // set null
+    obj->__has[1+2*(index/8)] |= (1<<(index%8));
+    // unset has flag
+    obj->__has[2*(index/8)] &= ~(1<<(index%8));
+}
+
+/**
+ * */
+void ccobjunsetnull(void *p, int index) {
+   ccjson_obj *obj = __ccobj(p);
+   obj->__has[1+2*(index/8)] &= ~(1<<(index%8));
+}
+
+// 设置对象是否是Null
+void ccobjnullset(void *p, bool isnull) {
+   cccheck(p);
+   ccjson_obj *obj = __ccobj(p);
+   if (isnull) {
+       obj->__flag |= enumflagccjsonobj_null;
+   }else {
+       obj->__flag &= ~enumflagccjsonobj_null;
+   }
+}
+
+
+// 判断对象是否是Null
+bool ccobjnullis(void *p) {
+   cccheckret(p, true);
+   ccjson_obj *obj = __ccobj(p);
+   return obj->__flag & enumflagccjsonobj_null;
 }
 
 // 初始化字典
@@ -2305,7 +2350,7 @@ cctypemeta *ccgettypemetaof(int index) {
 }
 
 // 从json 解析到结构体
-bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
+bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
     cccheckret(meta, false);
     cccheckret(json, false);
     // be sure all the meta will be init before use
@@ -2347,6 +2392,9 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
                 ccnumber *n = (ccnumber*)value;
                 *n = 0;
                 has = true;
+            }else {
+                // 其他都是ccjson_obj
+                ccobjnullset(value, true);
             }
             break; }
         case cJSON_Number : {
@@ -2376,6 +2424,7 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
             has = true;
             break; }
         case cJSON_Array : {
+            cccheckret(member && member->compose == 1, has);
             int arraysize = cJSON_GetArraySize(json);
             void **vv = (void**)value;
             // release first
@@ -2386,7 +2435,7 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
                 void *v = ccarraymalloc(arraysize, meta->size);
                 *vv = v;
                 for (int i=0; i<arraysize; ++i) {
-                    ccparse(meta, (char*)v + i * meta->size, cJSON_GetArrayItem(json, i));
+                    ccparse(meta, (char*)v + i * meta->size, cJSON_GetArrayItem(json, i), NULL);
                 }
             } else {
                 *vv = NULL;
@@ -2398,14 +2447,24 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json) {
             if(meta->members == NULL) {
                 break;
             }
+            // not null obj
+            ccobjnullset(value, false);
+
+            // set members
             cJSON *child = json->child;
             while(child) {
                 dictEntry *entry= dictFind((dict*)meta->members, child->string);
                 if (entry) {
                     ccmembermeta *membermeta = (ccmembermeta*)entry->v.val;
-                    if (ccparse(membermeta->type, (char*)value + membermeta->offset, child)) {
+                    
+                    // should call ccparse first
+                    if (ccparse(membermeta->type, (char*)value + membermeta->offset, child, membermeta)) {
                         ccobjset(value, membermeta->idx);
                     }
+                    // set null
+                    if (child->type == cJSON_NULL) {
+                        ccobjsetnull(value, membermeta->idx);
+                    } 
                 }
                 child = child->next;
             }
@@ -2426,17 +2485,21 @@ cJSON *ccunparse(cctypemeta *meta, void *value) {
     // 解析
     cJSON *obj = NULL;
     if (meta->members) {
-        obj = cJSON_CreateObject();
-        dictIterator *ite = dictGetIterator((dict*)meta->members);
-        dictEntry *entry = dictNext(ite);
-        while (entry) {
-            ccmembermeta* member = (ccmembermeta*)entry->v.val;
-            if (ccobjhas(value, member->idx)) {
-                ccunparsemember(member, (char*)value + member->offset, obj);
+        if (ccobjnullis(value) ) {
+            obj = cJSON_CreateNull();
+        } else {
+            obj = cJSON_CreateObject();
+            dictIterator *ite = dictGetIterator((dict*)meta->members);
+            dictEntry *entry = dictNext(ite);
+            while (entry) {
+                ccmembermeta* member = (ccmembermeta*)entry->v.val;
+                if (ccobjhas(value, member->idx)) {
+                    ccunparsemember(member, (char*)value + member->offset, obj);
+                }
+                entry = dictNext(ite);
             }
-            entry = dictNext(ite);
+            dictReleaseIterator(ite);
         }
-        dictReleaseIterator(ite);
     } else if (meta->type == cctypeofname(ccbool)) {
         bool *b = (bool*)value;
         obj = cJSON_CreateBool(*b);
@@ -2559,7 +2622,7 @@ bool ccobjreleasemember(ccmembermeta *mmeta, void *value) {
 bool ccparsefrom(cctypemeta *meta, void *value, const char *json) {
     bool ok = false;
     cJSON* cjson = cJSON_Parse(json);
-    ok = ccparse(meta, value, cjson);
+    ok = ccparse(meta, value, cjson, NULL);
     cJSON_Delete(cjson);
     return ok;
 }

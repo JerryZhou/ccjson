@@ -85,11 +85,17 @@ typedef struct ccmembermeta {
     cctypemeta *type;
 }ccmembermeta;
 
-#define _ccjson_obj(n) int __index; char __has[(n+7)/8]
+// 基础对象的标志位
+typedef enum enumflagccjsonobj {
+    enumflagccjsonobj_null = 1,
+}enumflagccjsonobj;
+
+#define _ccjson_obj(n) int __index; int __flag; char __has[2*((n+7)/8)]
 
 // 基础的 cjson_obj
 typedef struct ccjson_obj {
     int __index;
+    int __flag;
     char __has[];
 }ccjson_obj;
 
@@ -109,6 +115,16 @@ int ccobjmcount(struct cctypemeta *meta);
 bool ccobjhas(void *p, int index);
 void ccobjset(void *p, int index);
 void ccobjunset(void *p, int index);
+
+// 结构体成员为空的操作
+bool ccobjisnull(void *p, int index);
+void ccobjsetnull(void *p, int index);
+void ccobjunsetnull(void *p, int index);
+
+// 设置对象是否是Null
+void ccobjnullset(void *p, bool isnull);
+// 判断对象是否是Null
+bool ccobjnullis(void *p);
 
 /**
  * 造一个成员

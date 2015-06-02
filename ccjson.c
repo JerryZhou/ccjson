@@ -2357,6 +2357,11 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
     ccinittypemeta(meta);
     // 解析
     bool has = false;
+    // array require
+    if (member && member->compose == enumflagcompose_array 
+            && json->type != cJSON_Array) {
+        return has;
+    }
     switch(json->type) {
         case cJSON_False : {
             cccheckret(meta->type == cctypeofname(ccbool), has);
@@ -2424,7 +2429,7 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
             has = true;
             break; }
         case cJSON_Array : {
-            cccheckret(member && member->compose == 1, has);
+            cccheckret(member && member->compose == enumflagcompose_array, has);
             int arraysize = cJSON_GetArraySize(json);
             void **vv = (void**)value;
             // release first
@@ -2529,7 +2534,7 @@ bool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
     cctypemeta *meta = mmeta->type;
     cccheckret(meta, false);
     // unparse
-    if (mmeta->compose) {
+    if (mmeta->compose == enumflagcompose_array) {
         void **arrayvalue = (void**)value;
         int len = (int)ccarraylen(*arrayvalue);
         cJSON *array = cJSON_CreateArray();
@@ -2610,7 +2615,7 @@ bool ccobjreleasemember(ccmembermeta *mmeta, void *value) {
     cctypemeta *meta = mmeta->type;
     cccheckret(meta, false);
     // release
-    if (mmeta->compose) {
+    if (mmeta->compose == enumflagcompose_array) {
         ccobjreleasearray(meta, value);
     }else {
         ccobjrelease(meta, value);

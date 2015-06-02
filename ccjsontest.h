@@ -130,12 +130,42 @@ SP_CASE(ccjson, eg4) {
     print("json %s\n", json);
 
     iccparse(config, json);
+    SP_EQUAL(config->ver, 1);
+    SP_TRUE(ccobjhas(config, cctypeofmindex(ccconfig, ver)));
+    SP_TRUE(!ccobjhas(config, cctypeofmindex(ccconfig, has)));
+    SP_TRUE(ccobjhas(config, cctypeofmindex(ccconfig, detail)));
+    SP_TRUE(ccobjhas(config, cctypeofmindex(ccconfig, skips)));
 
     char* unjson = iccunparse(config);
     print("unjson %s\n", unjson);
 
+    const char* xjson = "{\"ver\":[1, 2, 3], \"has\":null, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":1}";
+
+    iccparse(config, xjson);
+    print("unjson %s\n", xjson);
+    SP_EQUAL(config->ver, 1);
+    SP_TRUE(ccobjhas(config, cctypeofmindex(ccconfig, skips)));
+
+    print("i m here skips %d !!\n", ccobjhas(config, cctypeofmindex(ccconfig, skips)));
+    print("i m here skips len %zu !!\n", ccarraylen(config->skips));
+
+    SP_EQUAL(config->skips[0], 1);
+    SP_EQUAL(config->skips[1], 0);
+    SP_EQUAL(config->skips[2], 2);
+
+    iccrelease(config);
+
+    // release all member
+    SP_TRUE(!ccobjhas(config, cctypeofmindex(ccconfig, ver)));
+    SP_TRUE(!ccobjhas(config, cctypeofmindex(ccconfig, has)));
+    SP_TRUE(!ccobjhas(config, cctypeofmindex(ccconfig, detail)));
+    SP_TRUE(!ccobjhas(config, cctypeofmindex(ccconfig, skips)));
+
+    print("i m here 002 !!\n");
+
     iccfree(config);
     iccfree(unjson);
+
 
     SP_TRUE(1);
 }

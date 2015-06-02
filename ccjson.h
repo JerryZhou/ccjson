@@ -76,6 +76,11 @@ typedef struct cctypemeta {
     cctypemeta_init init;
 }cctypemeta;
 
+// 组合标志
+typedef enum enumflagcompose {
+    enumflagcompose_array = 1,
+}enumflagcompose;
+
 // 成员的编码
 typedef struct ccmembermeta {
     const char *name;
@@ -290,7 +295,7 @@ char* ccjsonobjunparseto(void *p);
 // 实现成员数组类型
 #define __ccimplementmember_array(mtype,  ntype, member)  do {\
     ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
-                        offsetof(mtype, member), _midx++, 1); \
+                        offsetof(mtype, member), _midx++, enumflagcompose_array); \
     ccaddmember(meta, _member); } while(0);
 
     

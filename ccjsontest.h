@@ -145,6 +145,7 @@ SP_CASE(ccjson, eg4) {
     print("unjson %s\n", xjson);
     SP_EQUAL(config->ver, 1);
     SP_TRUE(ccobjhas(config, cctypeofmindex(ccconfig, skips)));
+    SP_TRUE(ccobjisnull(config, cctypeofmindex(ccconfig, has)));
 
     print("i m here skips %d !!\n", ccobjhas(config, cctypeofmindex(ccconfig, skips)));
     print("i m here skips len %zu !!\n", ccarraylen(config->skips));

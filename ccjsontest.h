@@ -167,7 +167,19 @@ SP_CASE(ccjson, eg4) {
     iccfree(config);
     iccfree(unjson);
 
+    SP_TRUE(1);
+}
 
+SP_CASE(ccjson, benchmarktest) {
+    ccconfig *config = iccalloc(ccconfig);
+    const char* json = "{\"ver\":1, \"has\":null, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":[1, null, 2]}";
+    int64_t cur = ccgetcurnano();
+    for (int i=0; i<10000; ++i) {
+        iccparse(config, json);
+    }
+    int64_t since = ccgetcurnano() - cur;
+    print("Parase 10000 Json Obj Take %lld nanos\n", since);
+    iccfree(config);
     SP_TRUE(1);
 }
 

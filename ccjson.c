@@ -1948,6 +1948,31 @@ void cJSON_Minify(char *json)
 #define cccheckret(exp, ret) do { if(!(exp)) { return ret; }} while(0)
 #define __ccmalloc(type) (type*)cc_alloc(sizeof(type));
 
+// 获取当前系统的纳秒数
+int64_t ccgetcurnano() {
+    struct timeval tv;
+    
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec*1000*1000 + tv.tv_usec;
+}
+
+// 获取当前系统的毫秒数
+int64_t ccgetcurtick() {
+    return ccgetcurnano()/1000;
+}
+
+// 获取系统的下一个唯一的事件纳秒数
+int64_t ccgetnextnano(){
+    static int64_t gseq = 0;
+    int64_t curseq = ccgetcurnano();
+    if (curseq > gseq) {
+        gseq = curseq;
+    }else {
+        ++gseq;
+    }
+    return gseq;
+}
+
 // 内存标签项目
 #define __CC_JSON_OBJ  1 
 #define __CC_JSON_ARRAY 1<<1

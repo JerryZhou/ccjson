@@ -15,6 +15,24 @@
 
 #define print printf 
 
+#define _open_mem_trace (0) 
+
+#if _open_mem_trace
+// new memory begin
+void membegin(const char* tag) {
+    if (tag) {
+        print("**********************%s**********************\n", tag);
+    }
+    cc_mem_cache_clear();
+    cc_mem_cache_state();
+    cc_mem_state();
+}
+#else
+void membegin(const char* tag) {
+    (void)tag;
+}
+#endif
+
 SP_SUIT(ccjson);
 
 SP_CASE(ccjson, ccarraymalloc) {
@@ -23,6 +41,8 @@ SP_CASE(ccjson, ccarraymalloc) {
 
 SP_CASE(ccjson, eg0) {
     config_app app = {0};
+    membegin("eg0-begin");
+    cc_enablememorycache(false);
 
     char *json = cc_read_file("app.json");
 
@@ -52,6 +72,10 @@ SP_CASE(ccjson, eg0) {
     ccobjrelease(&cctypeofmeta(config_app), &app);
 
     SP_TRUE(1);
+
+    cc_enablememorycache(true);
+
+    membegin("eg0");
 }
 
 SP_CASE(ccjson, eg1) {
@@ -68,6 +92,8 @@ SP_CASE(ccjson, eg1) {
     cc_free(unjson);
 
     SP_EQUAL(ccobjmcount(&cctypeofmeta(config_date)), 2);
+
+    membegin("eg1");
 }
 
 SP_CASE(ccjson, eg2) {
@@ -83,6 +109,8 @@ SP_CASE(ccjson, eg2) {
     iccfree(date);
 
     SP_TRUE(1);
+
+    membegin("eg1");
 }
 
 SP_CASE(ccjson, eg3) {
@@ -122,6 +150,8 @@ SP_CASE(ccjson, eg3) {
         SP_EQUAL(config->skips[3], 3);
 
     iccfree(config);
+
+    membegin("eg3");
 }
 
 SP_CASE(ccjson, eg4) {
@@ -168,6 +198,8 @@ SP_CASE(ccjson, eg4) {
     iccfree(unjson);
 
     SP_TRUE(1);
+
+    membegin("eg4");
 }
 
 SP_CASE(ccjson, benchmarktest) {
@@ -178,8 +210,11 @@ SP_CASE(ccjson, benchmarktest) {
         iccparse(config, json);
     }
     int64_t since = ccgetcurnano() - cur;
-    print("Parase 10000 Json Obj Take %lld nanos\n", since);
+    print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
     iccfree(config);
+    cc_mem_cache_clear();
+    cc_mem_state();
+
     SP_TRUE(1);
 }
 

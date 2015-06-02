@@ -1982,27 +1982,14 @@ int64_t ccgetnextnano(){
 typedef struct __cc_content {
     size_t flag;
     size_t size;
+    struct __cc_content *next;
+    struct __cc_content *pre;
+
     char content[];
 }__cc_content;
 
 // 追寻内容的指针
 #define __to_content(p) (__cc_content*)((char*)p - sizeof(__cc_content))
-
-// 设置标志位
-#define __cc_setflag(p, xflag)  do { \
-    __cc_content *content = __to_content(p); \
-    if (content) { content->flag |= xflag; } \
-    } while(0) 
-
-// 判断是否符合标志位
-#define __cc_hasflag(p, xflag) (p && ((__to_content(p))->flag & xflag))
-
-// 清理标志位
-#define __cc_unsetflag(p, xflag)  do { \
-    __cc_content *content = __to_content(p); \
-    if (content) { content->flag &= ~xflag; } \
-    } while(0) 
-
 
 // 内存状态
 static size_t gmemalloc = 0;
@@ -2019,7 +2006,7 @@ size_t cc_mem_state() {
 } 
 
 //  申请文本缓存区域
-char *cc_alloc(size_t size) {
+static char *__cc_alloc(size_t size) {
     __cc_content *content = (__cc_content*)calloc(1, size + gmemexpand);
     content->size = size;
     gmemalloc += (size + gmemexpand);
@@ -2027,7 +2014,7 @@ char *cc_alloc(size_t size) {
 }
 
 // 释放文本缓冲区
-void cc_free(char *c) {
+static void __cc_free(char *c) {
     cccheck(c);
     __cc_content *content = (__cc_content*)(c - sizeof(__cc_content));
     gmemfree += (content->size + gmemexpand); 
@@ -2035,10 +2022,208 @@ void cc_free(char *c) {
 }
 
 // 文本长度
-size_t cc_len(char *c) {
+static size_t __cc_len(char *c) {
     cccheckret(c, 0);
     __cc_content *content = (__cc_content*)(c - sizeof(__cc_content));
     return content->size;
+}
+
+// 设置标志位
+#define __cc_setflag(p, xflag)  do { \
+    __cc_content *content = __to_content(p); \
+    if (content) { content->flag |= xflag; } \
+    } while(0) 
+
+// 判断是否符合标志位
+#define __cc_hasflag(p, xflag) (p && ((__to_content(p))->flag & xflag))
+
+// 清理标志位
+#define __cc_unsetflag(p, xflag)  do { \
+    __cc_content *content = __to_content(p); \
+    if (content) { content->flag &= ~xflag; } \
+    } while(0) 
+
+// 构建一层内存反冲区域
+struct {
+    size_t size;
+    size_t capacity;
+    size_t len;
+    __cc_content *base;
+}gmemcache[10];
+// 内存缓存的个数
+static const int gmemcachecount = sizeof(gmemcache)/sizeof(gmemcache[0]);
+
+// 初始化内存条
+static void __ccinitmemcache() {
+    static int init = 0;
+    if (init) {
+        return;
+    }
+    ++init;
+    for (int i=0; i<gmemcachecount; ++i) {
+        gmemcache[i].size = 8<<i;
+        gmemcache[i].capacity = 100;
+        gmemcache[i].len = 0;
+        gmemcache[i].base = 0;
+    }
+}
+
+// 打印内存状态
+static size_t __ccmemcachestate() {
+    // 初始化
+    __ccinitmemcache();
+    // 打印内存缓冲区
+    printf("[CCJSON-Memory-Cache] count: %d\n", 
+            gmemcachecount);
+    size_t memsize = 0;
+    for (int i=0; i<gmemcachecount; ++i) {
+        printf("[CCJSON-Memory-Cache] ID: %d, "
+                "chuck size: %ld, "
+                "capacity: %ld, " 
+                "current: %ld, "
+                "hold: %ld \n",
+                i, 
+                gmemcache[i].size,
+                gmemcache[i].capacity,
+                gmemcache[i].len,
+                gmemcache[i].len * gmemcache[i].size);
+        memsize += gmemcache[i].len * gmemcache[i].size; 
+    }
+    return memsize;
+}
+
+// 打印内存缓冲区当前状况，并返回当前缓冲区持有的内存总数
+size_t cc_mem_cache_state() {
+    return __ccmemcachestate();
+}
+
+
+// 清理指定大小的缓冲区
+static void __ccmemcacheclear(int index) {
+    // 初始化缓冲区
+    __ccinitmemcache();
+    // 索引检查
+    cccheck(index>=0 && index<gmemcachecount);
+
+    // 释放所有内存块
+    while(gmemcache[index].base) {
+        __cc_content* cache = gmemcache[index].base; 
+        gmemcache[index].base = cache->next;
+        // 释放内存
+        __cc_free(cache->content);
+    }
+    gmemcache[index].len = 0;
+    gmemcache[index].base = NULL;
+}
+
+// 清理所有缓冲区
+void cc_mem_cache_clear() {
+    for (int i=0; i<gmemcachecount; ++i) {
+        __ccmemcacheclear(i);
+    }
+}
+
+// 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
+static int __ccsizeindex(size_t size) {
+    int index = 0;
+    size = (size-1)/8;
+    while(size) {
+        ++index;
+        size = size >> 1;
+    }
+    return index;
+}
+
+
+// 从缓冲区里面取一个
+static char* cc_mem_alloc(size_t size) {
+    // 初始化内存
+    __ccinitmemcache();
+    // 获取内存索引
+    int index = __ccsizeindex(size);
+    if (index < 0 || index >gmemcachecount) {
+        return __cc_alloc(size);
+    }
+    // 尝试从缓冲区获取
+    if (gmemcache[index].base) {
+        __cc_content* cache = gmemcache[index].base; 
+        if (cache->next) {
+            cache->next->pre = NULL;
+        }
+        cache->next = NULL;
+        // clear memory
+        memset(cache->content, 0, size+1);
+
+        gmemcache[index].base = cache->next;
+        --gmemcache[index].len;
+        // return
+        return cache->content;
+    } else {
+        // 缓冲区没有直接new 一个
+        char* mem = __cc_alloc(gmemcache[index].size);
+        mem[size] = 0;
+        return mem;
+    }
+}
+
+static void cc_mem_free(char *c) {
+    cccheck(c);
+    // 初始化缓冲区
+    __ccinitmemcache();
+    // 获取内存块
+    __cc_content *content = (__cc_content*)(c - sizeof(__cc_content));
+    int index = __ccsizeindex(content->size);
+    if (index < 0 || index >gmemcachecount) {
+        return __cc_free(c);
+    }
+    // 尝试释放到缓冲区
+    if (gmemcache[index].len < gmemcache[index].capacity) {
+        content->next = gmemcache[index].base;
+        if (content->next) {
+            content->next->pre = content;
+        }
+        content->pre = NULL;
+
+        gmemcache[index].base = content;
+        ++gmemcache[index].len;
+    }else {
+        // 直接释放
+        __cc_free(c);
+    }
+}
+
+// 是否开启内存缓冲区
+bool ccenablememcache = true;
+
+// 设置内存缓冲区，并返回设置前的状态
+bool cc_enablememorycache(bool enable) {
+    if (ccenablememcache != enable) {
+        ccenablememcache = enable;
+        return !ccenablememcache;
+    }
+    return ccenablememcache;
+}
+//  申请文本缓存区域
+char *cc_alloc(size_t size) {
+    if (ccenablememcache) {
+        return cc_mem_alloc(size);
+    }else {
+        return __cc_alloc(size);
+    }
+}
+
+// 释放文本缓冲区
+void cc_free(char *c) {
+    if (ccenablememcache) {
+        return cc_mem_free(c);
+    }else {
+        return __cc_free(c);
+    }
+}
+
+// 文本长度
+size_t cc_len(char *c) {
+    return __cc_len(c);
 }
 
 // 生成一个填满字符缓冲区

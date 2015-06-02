@@ -46,6 +46,10 @@ int64_t ccgetcurtick();
 int64_t ccgetnextnano();
 
 // ******************************************************************************
+// 设置内存缓冲区，并返回设置前的状态
+bool cc_enablememorycache(bool enable); 
+// 清理缓冲区
+void cc_mem_cache_clear(); 
 //  申请文本缓存区域, 以0结尾, 返回的字符串需要调用 cc_free
 char *cc_alloc(size_t size);
 // 释放文本缓冲区
@@ -56,6 +60,8 @@ size_t cc_len(char *c);
 char *cc_dup(const char* src);
 // 打印内存当前状况, 并返回当前持有内存的总数
 size_t cc_mem_state();
+// 打印内存缓冲区当前状况，并返回当前缓冲区持有的内存总数
+size_t cc_mem_cache_state();
 
 // ******************************************************************************
 // 读取文本文件 , 返回的字符串需要调用 cc_free

@@ -41,3 +41,8 @@
     iccparse(c, "{"\"i\":123}");
     // 释放对象
     iccfree(c);
+
+# 不支持的特性
+    不支持异构类型的数组，数组的成员类型必须一致{ "a":[1, "string", false]}
+    不支持数组的数组 {"a"=[1, 2, [1, 3]]}
+    不支持基础对象的Null (bool, number, string 不支持 null)

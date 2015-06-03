@@ -223,14 +223,14 @@ char* ccjsonobjunparseto(void *p);
 // 辅助宏：用来创建各种元信息
 #define cctypeofname(type) __cc_name_##type
 #define cctypeofmeta(type) __cc_meta_##type
-#define cctypeofmindex(type, mtype) __cc_index_##type##_##mtype
+#define cctypeofmindex(type, member) __cc_index_##type##_##member
 #define cctypeofmcount(type) __cc_index_max_##type
 
 // 声明成员索引
 #define __ccdeclareindexbegin(type) typedef enum __cc_index_##type {
-#define __ccdeclareindexmember(type, membertype, member) __cc_index_##type##_##member,
-#define __ccdeclareindexmember_array(type, membertype, member) __cc_index_##type##_##member,
-#define __ccdeclareindexend(type) __cc_index_max_##type } __cc_index_##type ;
+#define __ccdeclareindexmember(type, mtype, member) cctypeofmindex(type, member),
+#define __ccdeclareindexmember_array(type, mtype, member) cctypeofmindex(type, member),
+#define __ccdeclareindexend(type) cctypeofmcount(type) } __cc_index_##type ;
 
 // 声明元信息
 #define __ccdeclaretype(mtype) \
@@ -284,7 +284,6 @@ char* ccjsonobjunparseto(void *p);
             return meta->index; \
         }\
         meta->index = ccaddtypemeta(meta); \
-        int _midx = 0; \
 
 // 结束有成员变量的类型
 #define __ccimplementtypeend(mtype) \
@@ -303,13 +302,13 @@ char* ccjsonobjunparseto(void *p);
 // 实现成员类型
 #define __ccimplementmember(mtype, ntype, member)  do {\
     ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
-                        offsetof(mtype, member), _midx++, 0); \
+                        offsetof(mtype, member), cctypeofmindex(mtype, member), 0); \
     ccaddmember(meta, _member); } while(0);
 
 // 实现成员数组类型
 #define __ccimplementmember_array(mtype,  ntype, member)  do {\
     ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
-                        offsetof(mtype, member), _midx++, enumflagcompose_array); \
+                        offsetof(mtype, member), cctypeofmindex(mtype, member), enumflagcompose_array); \
     ccaddmember(meta, _member); } while(0);
 
     

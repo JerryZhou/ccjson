@@ -119,7 +119,13 @@ typedef struct ccjson_obj {
 }ccjson_obj;
 
 // 数组操作
-void * ccarraymalloc(size_t n, size_t size);
+// n : 数组个数
+// size : 每个元素的大小
+// index : meta 的索引
+void * ccarraymalloc(size_t n, size_t size, int index);
+void * ccarraymallocof(size_t n, cctypemeta* meta);
+cctypemeta* ccarraymeta(void *array);
+ccjson_obj* ccarrayobj(void *array);
 void ccarrayfree(void *array);
 size_t ccarraylen(void *array);
 
@@ -139,6 +145,16 @@ void ccobjunset(void *p, int index);
 bool ccobjisnull(void *p, int index);
 void ccobjsetnull(void *p, int index);
 void ccobjunsetnull(void *p, int index);
+
+// 结构体成员操作
+bool ccarrayhas(void *p, int index);
+void ccarrayset(void *p, int index);
+void ccarrayunset(void *p, int index);
+
+// 结构体成员为空的操作
+bool ccarrayisnull(void *p, int index);
+void ccarraysetnull(void *p, int index);
+void ccarrayunsetnull(void *p, int index);
 
 // 设置对象是否是Null
 void ccobjnullset(void *p, bool isnull);

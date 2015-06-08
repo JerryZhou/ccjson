@@ -201,9 +201,111 @@ SP_CASE(ccjson, eg4) {
 
     membegin("eg4");
 }
+SP_CASE(ccjson, arraymalloc) {
+    int *array = (int*)ccarraymalloc(3, sizeof(int), 0);
+    
+    ccarrayfree(array);
+    ccjson_obj *arrayobj = ccarrayobj(array);
+    char c0 = arrayobj->__has[0];
+    char c1 = arrayobj->__has[1];
+    
+    SP_EQUAL(c0, 0);
+    SP_EQUAL(c1, 0);
+    
+    ccarrayset(array, 0);
+    
+    char cc0 = arrayobj->__has[0];
+    char cc1 = arrayobj->__has[1];
+    
+    SP_EQUAL(cc0, 1);
+    SP_EQUAL(cc1, 0);
+    
+    ccarraysetnull(array, 1);
+    
+    char ccc0 = arrayobj->__has[0];
+    char ccc1 = arrayobj->__has[1];
+    
+    SP_EQUAL(ccc0, 1);
+    SP_EQUAL(ccc1, 2);
+}
+
+SP_CASE(ccjson, array) {
+    ccconfig *config = iccalloc(ccconfig);
+    const char* json = "{\"skips\":[1, null, 2]}";
+    iccparse(config, json);
+    char *unjson = iccunparse(config);
+    
+    bool has0 = ccarrayhas(config->skips, 0);
+    bool has1 = ccarrayhas(config->skips, 1);
+    bool has2 = ccarrayhas(config->skips, 2);
+    
+    bool null0 = ccarrayisnull(config->skips, 0);
+    bool null1 = ccarrayisnull(config->skips, 1);
+    bool null2 = ccarrayisnull(config->skips, 2);
+    
+    iccparse(config, unjson);
+    
+    bool xhas0 = ccarrayhas(config->skips, 0);
+    bool xhas1 = ccarrayhas(config->skips, 1);
+    bool xhas2 = ccarrayhas(config->skips, 2);
+    
+    bool xnull0 = ccarrayisnull(config->skips, 0);
+    bool xnull1 = ccarrayisnull(config->skips, 1);
+    bool xnull2 = ccarrayisnull(config->skips, 2);
+    
+    SP_EQUAL(has0, xhas0);
+    SP_EQUAL(has1, xhas1);
+    SP_EQUAL(has2, xhas2);
+    
+    SP_EQUAL(null0, xnull0);
+    SP_EQUAL(null1, xnull1);
+    SP_EQUAL(null2, xnull2);
+    
+    SP_EQUAL(has0, true);
+    SP_EQUAL(has1, false);
+    SP_EQUAL(has2, true);
+    
+    SP_EQUAL(null0, false);
+    SP_EQUAL(null1, true);
+    SP_EQUAL(null2, false);
+    
+    iccfree(unjson);
+    iccfree(config);
+}
+
+SP_CASE(ccjson, benchmarktestcomplex) {
+    config_app *app = iccalloc(config_app);
+    char *json = cc_read_file("app.json");
+    int64_t cur = ccgetcurnano();
+    for (int i=0; i<10000; ++i) {
+        iccparse(app, json);
+    }
+    int64_t since = ccgetcurnano() - cur;
+    print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
+    iccfree(json);
+    iccfree(app);
+    SP_TRUE(1);
+}
+
+SP_CASE(ccjson, benchmarktestcomplexdisablememcache) {
+    cc_enablememorycache(false);
+    config_app *app = iccalloc(config_app);
+    char *json = cc_read_file("app.json");
+    int64_t cur = ccgetcurnano();
+    for (int i=0; i<10000; ++i) {
+        iccparse(app, json);
+    }
+    int64_t since = ccgetcurnano() - cur;
+    print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
+    iccfree(json);
+    iccfree(app);
+    cc_enablememorycache(true);
+    SP_TRUE(1);
+}
 
 SP_CASE(ccjson, benchmarktest) {
     ccconfig *config = iccalloc(ccconfig);
+
     const char* json = "{\"ver\":1, \"has\":null, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":[1, null, 2]}";
     int64_t cur = ccgetcurnano();
     for (int i=0; i<10000; ++i) {

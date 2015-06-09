@@ -62,6 +62,15 @@ char *cc_dup(const char* src);
 size_t cc_mem_state();
 // 打印内存缓冲区当前状况，并返回当前缓冲区持有的内存总数
 size_t cc_mem_cache_state();
+// 索引所在缓冲区域的大小 
+size_t cc_mem_cache_current(int index);
+// 索引所在缓冲区域的容量
+size_t cc_mem_cache_capacity(int index);
+// 设置缓冲区的容量
+void cc_mem_cache_setcapacity(int index, size_t capacity); 
+// 清理指定大小的缓冲区
+void cc_mem_cache_clearof(int index);
+
 
 // ******************************************************************************
 // 读取文本文件 , 返回的字符串需要调用 cc_free

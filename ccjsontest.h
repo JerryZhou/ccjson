@@ -273,6 +273,74 @@ SP_CASE(ccjson, array) {
     iccfree(config);
 }
 
+SP_CASE(ccjson, ccarrayfree) {
+    int *array = (int*)ccarraymalloc(3, sizeof(int), 0);
+
+    array[0] = 1;
+    ccarrayset(array, 0);
+
+    array[1] = 2;
+    ccarrayset(array, 1);
+
+    array[2] = 3;
+    ccarrayset(array, 2);
+
+    SP_EQUAL(ccarraylen(array), 3);
+
+    SP_EQUAL(ccarrayhas(array, 0), true);
+    SP_EQUAL(ccarrayhas(array, 1), true);
+    SP_EQUAL(ccarrayhas(array, 2), true);
+
+    iccfree(array);
+}
+
+SP_CASE(ccjson, cc_mem_cache) {
+    cc_enablememorycache(true);
+    cc_mem_cache_clear();
+    cc_mem_cache_state();
+    SP_EQUAL(cc_mem_cache_current(1), 0);
+    char * content = cc_dup("12345678");
+    SP_EQUAL(cc_mem_cache_current(1), 0);
+
+    iccfree(content);
+    cc_mem_cache_state();
+
+    SP_EQUAL(cc_mem_cache_current(1), 1);
+    content = cc_dup("12345678");
+    SP_EQUAL(cc_mem_cache_current(1), 0);
+    iccfree(content);
+    SP_EQUAL(cc_mem_cache_current(1), 1);
+    cc_mem_cache_clearof(1);
+    SP_EQUAL(cc_mem_cache_current(1), 0);
+
+    SP_EQUAL(cc_mem_cache_capacity(1), 100);
+    cc_mem_cache_setcapacity(1, 3);
+    char *alls[8] = {0};
+    for (int i=0; i<5; ++i) {
+        alls[i] = cc_dup("12345678"); 
+    }
+    SP_EQUAL(cc_mem_cache_current(1), 0);
+    iccfree(alls[0]);
+    SP_EQUAL(cc_mem_cache_current(1), 1);
+    iccfree(alls[1]);
+    SP_EQUAL(cc_mem_cache_current(1), 2);
+    iccfree(alls[2]);
+    SP_EQUAL(cc_mem_cache_current(1), 3);
+    iccfree(alls[3]);
+    SP_EQUAL(cc_mem_cache_current(1), 3);
+    iccfree(alls[4]);
+    SP_EQUAL(cc_mem_cache_current(1), 3);
+
+    cc_mem_cache_state();
+
+    cc_mem_cache_clearof(1);
+    SP_EQUAL(cc_mem_cache_current(1), 0);
+
+    cc_mem_cache_state();
+
+    SP_TRUE(1);
+}
+
 SP_CASE(ccjson, benchmarktestcomplex) {
     config_app *app = iccalloc(config_app);
     char *json = cc_read_file("app.json");

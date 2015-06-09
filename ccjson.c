@@ -1988,6 +1988,9 @@ typedef struct __cc_content {
     char content[];
 }__cc_content;
 
+// 内部定义的对象
+#define __internal_cc_content size_t flag; size_t size; struct __cc_content *next; struct __cc_content *pre; char content[]
+
 // 追寻内容的指针
 #define __to_content(p) (__cc_content*)((char*)p - sizeof(__cc_content))
 
@@ -2004,6 +2007,7 @@ size_t cc_mem_state() {
             gmemalloc-gmemfree);
     return gmemalloc - gmemfree;
 } 
+
 
 //  申请文本缓存区域
 static char *__cc_alloc(size_t size) {
@@ -2043,13 +2047,15 @@ static size_t __cc_len(char *c) {
     if (content) { content->flag &= ~xflag; } \
     } while(0) 
 
+// 内存缓冲区的最小大小
+static const size_t __cc_isize = 4;
 // 构建一层内存反冲区域
 struct {
     size_t size;
     size_t capacity;
     size_t len;
     __cc_content *base;
-}gmemcache[10];
+}gmemcache[14]; // 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768
 // 内存缓存的个数
 static const int gmemcachecount = sizeof(gmemcache)/sizeof(gmemcache[0]);
 
@@ -2061,7 +2067,7 @@ static void __ccinitmemcache() {
     }
     ++init;
     for (int i=0; i<gmemcachecount; ++i) {
-        gmemcache[i].size = 8<<i;
+        gmemcache[i].size = __cc_isize<<i;
         gmemcache[i].capacity = 100;
         gmemcache[i].len = 0;
         gmemcache[i].base = 0;
@@ -2097,9 +2103,8 @@ size_t cc_mem_cache_state() {
     return __ccmemcachestate();
 }
 
-
 // 清理指定大小的缓冲区
-static void __ccmemcacheclear(int index) {
+void cc_mem_cache_clearof(int index) {
     // 初始化缓冲区
     __ccinitmemcache();
     // 索引检查
@@ -2119,21 +2124,39 @@ static void __ccmemcacheclear(int index) {
 // 清理所有缓冲区
 void cc_mem_cache_clear() {
     for (int i=0; i<gmemcachecount; ++i) {
-        __ccmemcacheclear(i);
+        cc_mem_cache_clearof(i);
     }
 }
 
-// 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
+// 索引所在缓冲区域的大小 
+size_t cc_mem_cache_current(int index) {
+    cccheckret(index>=0 && index<gmemcachecount, 0);
+    return gmemcache[index].len;
+}
+
+// 索引所在缓冲区域的容量
+size_t cc_mem_cache_capacity(int index) {
+    cccheckret(index>=0 && index<gmemcachecount, 0);
+    return gmemcache[index].capacity; 
+}
+
+// 设置缓冲区的容量
+void cc_mem_cache_setcapacity(int index, size_t capacity) {
+    cccheck(index>=0 && index<gmemcachecount);
+    gmemcache[index].capacity = capacity;
+}
+
+// 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
 static int __ccsizeindex(size_t size) {
+    cccheckret(size, 0);
     int index = 0;
-    size = (size-1)/8;
+    size = (size-1)/__cc_isize;
     while(size) {
         ++index;
         size = size >> 1;
     }
     return index;
 }
-
 
 // 从缓冲区里面取一个
 static char* cc_mem_alloc(size_t size) {
@@ -2147,17 +2170,19 @@ static char* cc_mem_alloc(size_t size) {
     // 尝试从缓冲区获取
     if (gmemcache[index].base) {
         __cc_content* cache = gmemcache[index].base; 
+
+        gmemcache[index].base = cache->next;
+        --gmemcache[index].len;
+
         if (cache->next) {
             cache->next->pre = NULL;
+            cache->next = NULL;
         }
-        cache->next = NULL;
         // clear memory
         memset(cache->content, 0, size+1);
         // clear flag
         cache->flag = 0;
 
-        gmemcache[index].base = cache->next;
-        --gmemcache[index].len;
         // return
         return cache->content;
     } else {
@@ -2185,6 +2210,7 @@ static void cc_mem_free(char *c) {
             content->next->pre = content;
         }
         content->pre = NULL;
+        content->flag = 0;
 
         gmemcache[index].base = content;
         ++gmemcache[index].len;
@@ -2318,18 +2344,17 @@ static dictType xdictTypeHeapStringCopyKey = {
 // 数组 (可以加一点salt 在结构里面做校验)
 typedef struct ccjsonarray {
     size_t n;
-    size_t size;
+    size_t nsize;
     ccjson_obj *obj0;
     ccjson_obj *obj1; // 字节对齐
 
-    char addr[];
+    __internal_cc_content;
 }ccjsonarray;
 
 // 数组绑定的动态成员基本属性
 static ccjson_obj *_ccjsonobjallocdynamic(int index, size_t n) {
     ccjson_obj *obj = (ccjson_obj*)cc_alloc( sizeof(ccjson_obj) + 2*(n + 7)/8);
     obj->__index = index;
-    __cc_setflag(obj, __CC_JSON_ARRAY);
     return obj;
 }
 
@@ -2338,9 +2363,10 @@ static ccjson_obj *_ccjsonobjallocdynamic(int index, size_t n) {
 void * ccarraymalloc(size_t n, size_t size, int index) {
     ccjsonarray * p = (ccjsonarray*)cc_alloc(n * size + sizeof(ccjsonarray));
     p->n = n;
-    p->size = size;
+    p->nsize = size;
     p->obj0 = _ccjsonobjallocdynamic(index, n);
-    return p->addr;
+    __cc_setflag(p->content, __CC_JSON_ARRAY);
+    return p->content;
 }
 
 /**
@@ -2980,8 +3006,12 @@ void ccjsonobjrelease(void *p) {
 void ccjsonobjfree(void *p) {
     if (__cc_hasflag(p, __CC_JSON_OBJ) ) {
         ccjsonobjrelease(p);
+        cc_free((char*)p);
+    }else if (__cc_hasflag(p, __CC_JSON_ARRAY) ) {
+        ccarrayfree(p);
+    }else {
+        cc_free((char*)p);
     }
-    cc_free((char*)p);
 }
 
 

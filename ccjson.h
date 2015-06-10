@@ -48,8 +48,6 @@ int64_t ccgetnextnano();
 // ******************************************************************************
 // 设置内存缓冲区，并返回设置前的状态
 bool cc_enablememorycache(bool enable); 
-// 清理缓冲区
-void cc_mem_cache_clear(); 
 //  申请文本缓存区域, 以0结尾, 返回的字符串需要调用 cc_free
 char *cc_alloc(size_t size);
 // 释放文本缓冲区
@@ -70,6 +68,9 @@ size_t cc_mem_cache_capacity(int index);
 void cc_mem_cache_setcapacity(int index, size_t capacity); 
 // 清理指定大小的缓冲区
 void cc_mem_cache_clearof(int index);
+// 清理缓冲区
+void cc_mem_cache_clear(); 
+
 
 
 // ******************************************************************************
@@ -343,9 +344,11 @@ typedef char* ccstring;
 typedef bool ccbool;
 typedef double ccnumber;
 typedef int ccint;
+typedef int64_t ccint64;
 
 // 声明基础类型
 __ccdeclaretype(ccint)
+__ccdeclaretype(ccint64)
 __ccdeclaretype(ccnumber)
 __ccdeclaretype(ccstring)
 __ccdeclaretype(ccbool)
@@ -353,6 +356,7 @@ __ccdeclaretype(ccbool)
 // 声明类型索引
 __ccdeclareindexbegin(ccconfig)
 __ccdeclareindexmember(ccconfig, ccint, ver)
+__ccdeclareindexmember(ccconfig, ccint64, ver64)
 __ccdeclareindexmember(ccconfig, ccbool, has)
 __ccdeclareindexmember(ccconfig, ccstring, detail)
 __ccdeclareindexmember_array(ccconfig, ccint, skips)
@@ -361,6 +365,7 @@ __ccdeclareindexend(ccconfig)
 // 声明复杂类型
 __ccdeclaretypebegin(ccconfig)
 __ccdeclaremember(ccconfig, ccint, ver)
+__ccdeclaremember(ccconfig, ccint64, ver64)
 __ccdeclaremember(ccconfig, ccbool, has)
 __ccdeclaremember(ccconfig, ccstring, detail)
 __ccdeclaremember_array(ccconfig, ccint, skips)

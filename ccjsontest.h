@@ -12,6 +12,7 @@
 #include "simpletest.h"
 #include "ccjsonstruct.h"
 #include "ccjson.h"
+#include <limits.h>
 
 #define print printf 
 
@@ -201,6 +202,23 @@ SP_CASE(ccjson, eg4) {
 
     membegin("eg4");
 }
+
+SP_CASE(ccjson, int64) {
+    ccconfig *config = iccalloc(ccconfig);
+    config->ver64 = -1000 * (int64_t)INT_MAX;
+    ccobjset(config, cctypeofmindex(ccconfig, ver64));
+    char *unjson = iccunparse(config);
+    print("unjson: %s\n", unjson);
+
+    ccconfig *nconfig = iccalloc(ccconfig);
+    iccparse(nconfig, unjson);
+    SP_EQUAL(nconfig->ver64, config->ver64);
+
+    iccfree(unjson);
+    iccfree(config);
+    iccfree(nconfig);
+}
+
 SP_CASE(ccjson, arraymalloc) {
     int *array = (int*)ccarraymalloc(3, sizeof(int), 0);
     
@@ -303,8 +321,6 @@ SP_CASE(ccjson, cc_mem_cache) {
     SP_EQUAL(cc_mem_cache_current(1), 0);
 
     iccfree(content);
-    cc_mem_cache_state();
-
     SP_EQUAL(cc_mem_cache_current(1), 1);
     content = cc_dup("12345678");
     SP_EQUAL(cc_mem_cache_current(1), 0);

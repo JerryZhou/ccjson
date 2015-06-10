@@ -1291,6 +1291,7 @@ typedef struct cJSON {
 
     char *valuestring;          /* The item's string, if type==cJSON_String */
     int valueint;               /* The item's number, if type==cJSON_Number */
+    int64_t valueint64;         /* The item's number, if type==cJSON_Number */
     double valuedouble;         /* The item's number, if type==cJSON_Number */
 
     char *string;               /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
@@ -1377,7 +1378,7 @@ extern void cJSON_Minify(char *json);
 #define cJSON_AddStringToObject(object,name,s)  cJSON_AddItemToObject(object, name, cJSON_CreateString(s))
 
 /* When assigning an integer value, it needs to be propagated to valuedouble too. */
-#define cJSON_SetIntValue(object,val)           ((object)?(object)->valueint=(object)->valuedouble=(val):(val))
+#define cJSON_SetIntValue(object,val)           ((object)?(object)->valueint=(object)->valuedouble=(object)->valueint64=(val):(val))
 
 static const char *ep;
 
@@ -1443,10 +1444,11 @@ void cJSON_Delete(cJSON *c)
 static const char *parse_number(cJSON *item,const char *num)
 {
 	double n=0,sign=1,scale=0;int subscale=0,signsubscale=1;
+    int64_t n64=0;
 
 	if (*num=='-') sign=-1,num++;	/* Has sign? */
 	if (*num=='0') num++;			/* is zero */
-	if (*num>='1' && *num<='9')	do	n=(n*10.0)+(*num++ -'0');	while (*num>='0' && *num<='9');	/* Number? */
+	if (*num>='1' && *num<='9')	do	{ n=(n*10.0)+(*num++ -'0'); n64 = (int64_t)n; }	while (*num>='0' && *num<='9');	/* Number? */
 	if (*num=='.' && num[1]>='0' && num[1]<='9') {num++;		do	n=(n*10.0)+(*num++ -'0'),scale--; while (*num>='0' && *num<='9');}	/* Fractional part? */
 	if (*num=='e' || *num=='E')		/* Exponent? */
 	{	num++;if (*num=='+') num++;	else if (*num=='-') signsubscale=-1,num++;		/* With sign? */
@@ -1454,9 +1456,11 @@ static const char *parse_number(cJSON *item,const char *num)
 	}
 
 	n=sign*n*pow(10.0,(scale+subscale*signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
+    n64=sign*n64*pow(10, (subscale*signsubscale));
 	
 	item->valuedouble=n;
 	item->valueint=(int)n;
+    item->valueint64=n64;
 	item->type=cJSON_Number;
 	return num;
 }
@@ -1470,7 +1474,11 @@ static char *print_number(cJSON *item)
 	{
 		str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
 		if (str) sprintf(str,"%d",item->valueint);
-	}
+	} else if (fabs(((double)item->valueint)-d)<=DBL_EPSILON && d>=INT_MAX) 
+    {
+        str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
+        if (str) sprintf(str,"%lld",item->valueint64);
+    }
 	else
 	{
 		str=(char*)cJSON_malloc(64);	/* This is a nice tradeoff. */
@@ -1887,6 +1895,7 @@ cJSON *cJSON_CreateTrue(void)					{cJSON *item=cJSON_New_Item();if(item)item->ty
 cJSON *cJSON_CreateFalse(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_False;return item;}
 cJSON *cJSON_CreateBool(int b)					{cJSON *item=cJSON_New_Item();if(item)item->type=b?cJSON_True:cJSON_False;return item;}
 cJSON *cJSON_CreateNumber(double num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valuedouble=num;item->valueint=(int)num;}return item;}
+cJSON *cJSON_CreateNumber64(int64_t num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valueint64 = num; item->valuedouble=num;item->valueint=(int)num;}return item;}
 cJSON *cJSON_CreateString(const char *string)	{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_String;item->valuestring=cJSON_strdup(string);}return item;}
 cJSON *cJSON_CreateArray(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Array;return item;}
 cJSON *cJSON_CreateObject(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Object;return item;}
@@ -1907,7 +1916,7 @@ cJSON *cJSON_Duplicate(cJSON *item,int recurse)
 	newitem=cJSON_New_Item();
 	if (!newitem) return 0;
 	/* Copy over all vars */
-	newitem->type=item->type&(~cJSON_IsReference),newitem->valueint=item->valueint,newitem->valuedouble=item->valuedouble;
+	newitem->type=item->type&(~cJSON_IsReference),newitem->valueint=item->valueint,newitem->valuedouble=item->valuedouble;newitem->valueint64=item->valueint64;
 	if (item->valuestring)	{newitem->valuestring=cJSON_strdup(item->valuestring);	if (!newitem->valuestring)	{cJSON_Delete(newitem);return 0;}}
 	if (item->string)		{newitem->string=cJSON_strdup(item->string);			if (!newitem->string)		{cJSON_Delete(newitem);return 0;}}
 	/* If non-recursive, then we're done! */
@@ -2720,10 +2729,14 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
             break; }
         case cJSON_Number : {
             cccheckret(meta->type == cctypeofname(ccint) ||
-                       meta->type == cctypeofname(ccnumber) , has);
+                       meta->type == cctypeofname(ccnumber) ||
+                       meta->type == cctypeofname(ccint64) , has);
             if (meta->type == cctypeofname(ccint)) {
                 ccint *i = (ccint*)value;
                 *i = json->valueint;
+            } else if(meta->type == cctypeofname(ccint64)) {
+                ccint64 *i = (ccint64*)value;
+                *i = json->valueint64;
             } else if(meta->type == cctypeofname(ccnumber)) {
                 ccnumber *n = (ccnumber*)value;
                 *n = json->valuedouble;
@@ -2836,6 +2849,9 @@ cJSON *ccunparse(cctypemeta *meta, void *value) {
     } else if(meta->type == cctypeofname(ccint)) {
         ccint *i = (ccint*)value;
         obj = cJSON_CreateNumber(*i);
+    } else if (meta->type == cctypeofname(ccint64)) {
+        ccint64 *i = (ccint64*)value;
+        obj = cJSON_CreateNumber64(*i);
     } else if(meta->type == cctypeofname(ccnumber)) {
         ccnumber *n = (ccnumber*)value;
         obj = cJSON_CreateNumber(*n);
@@ -3034,6 +3050,7 @@ char* ccjsonobjunparseto(void *p) {
 
 // 基础类型
 __ccimplementtype(ccint)
+__ccimplementtype(ccint64)
 __ccimplementtype(ccnumber)
 __ccimplementtype(ccstring)
 __ccimplementtype(ccbool)
@@ -3042,6 +3059,7 @@ __ccimplementtype(ccbool)
 // 声明复杂类型
 __ccimplementtypebegin(ccconfig)
 __ccimplementmember(ccconfig, ccint, ver)
+__ccimplementmember(ccconfig, ccint64, ver64)
 __ccimplementmember(ccconfig, ccbool, has)
 __ccimplementmember(ccconfig, ccstring, detail)
 __ccimplementmember_array(ccconfig, ccint, skips)

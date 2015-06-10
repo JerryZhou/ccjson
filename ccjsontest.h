@@ -219,6 +219,88 @@ SP_CASE(ccjson, int64) {
     iccfree(nconfig);
 }
 
+SP_CASE(ccjson, point) {
+    
+    ccinittypemeta(&cctypeofmeta(test_json));
+    ccinittypemeta(&cctypeofmeta(test_json_sub));
+    
+    cc_enablememorycache(false);
+
+    size_t current = cc_mem_size();
+    {
+        const char* json = "{\"ip\":4}";
+        test_json *test = iccalloc(test_json);
+        
+        iccparse(test, json);
+        
+        SP_EQUAL(*test->ip, 4);
+        
+        iccfree(test);
+        
+        size_t xcurrent = cc_mem_size();
+        
+        SP_EQUAL(xcurrent, current);
+
+    }
+    {
+        const char* json = "{\"ip\":4, \"isub\":{\"i\":3}, \"xsub\":{\"i\":12}}";
+        test_json *test = iccalloc(test_json);
+        
+        iccparse(test, json);
+        
+        SP_EQUAL(*test->ip, 4);
+        
+        SP_EQUAL(test->isub.i, 3);
+        
+        SP_EQUAL(test->xsub->i, 12);
+        
+        iccfree(test);
+        
+        size_t xcurrent = cc_mem_size();
+        
+        SP_EQUAL(xcurrent, current);    // check if we have memory leak
+    }
+    
+    {
+        const char* json = "{\"ip\":4, \"isub\":{\"i\":3}, \"xsub\":{\"i\":12}, \"array\":[1,2,3], \"subarray\":[{\"i\":10}, {\"i\":20}, {\"i\":30}]}";
+        test_json *test = iccalloc(test_json);
+        
+        for (int i=0; i < 100; ++i) {
+            iccparse(test, json);
+        }
+        
+        SP_EQUAL(*test->ip, 4);
+        
+        SP_EQUAL(test->isub.i, 3);
+        
+        SP_EQUAL(test->xsub->i, 12);
+        
+        SP_EQUAL(test->array[0], 1);
+        
+        SP_EQUAL(test->array[1], 2);
+        
+        SP_EQUAL(test->array[2], 3);
+        
+        SP_EQUAL(test->subarray[0].i, 10);
+        SP_EQUAL(test->subarray[1].i, 20);
+        SP_EQUAL(test->subarray[2].i, 30);
+        
+        iccfree(test);
+        
+        size_t xcurrent = cc_mem_size();
+        
+        SP_EQUAL(xcurrent, current);    // check if we have memory leak
+    }
+
+    SP_TRUE(1);
+    
+    size_t xcurrent = cc_mem_size();
+
+    SP_EQUAL(xcurrent, current);    // check if we have memory leak
+
+    cc_enablememorycache(true);
+}
+
 SP_CASE(ccjson, arraymalloc) {
     int *array = (int*)ccarraymalloc(3, sizeof(int), 0);
     

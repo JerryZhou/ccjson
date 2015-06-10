@@ -48,6 +48,8 @@ int64_t ccgetnextnano();
 // ******************************************************************************
 // 设置内存缓冲区，并返回设置前的状态
 bool cc_enablememorycache(bool enable); 
+// 返回当前使用的内存总数
+size_t cc_mem_size();
 //  申请文本缓存区域, 以0结尾, 返回的字符串需要调用 cc_free
 char *cc_alloc(size_t size);
 // 释放文本缓冲区
@@ -103,6 +105,7 @@ typedef struct cctypemeta {
 // 组合标志
 typedef enum enumflagcompose {
     enumflagcompose_array = 1,
+    enumflagcompose_point = 2,
 }enumflagcompose;
 
 // 成员的编码
@@ -256,6 +259,7 @@ char* ccjsonobjunparseto(void *p);
 #define __ccdeclareindexbegin(type) typedef enum __cc_index_##type {
 #define __ccdeclareindexmember(type, mtype, member) cctypeofmindex(type, member),
 #define __ccdeclareindexmember_array(type, mtype, member) cctypeofmindex(type, member),
+#define __ccdeclareindexmember_point(type, mtype, member) cctypeofmindex(type, member),
 #define __ccdeclareindexend(type) cctypeofmcount(type) } __cc_index_##type ;
 
 // 声明元信息
@@ -297,6 +301,11 @@ char* ccjsonobjunparseto(void *p);
 #define __ccdeclaremember_array(mtype, htype, m) \
     htype* m;
 
+// 声明指针成员
+#define __ccdeclaremember_point(mtype, htype, m) \
+    htype* m;
+
+
 #define __ccdeclaretypeend(mtype) \
     } mtype; \
     extern const char* cctypeofname(mtype); \
@@ -337,6 +346,11 @@ char* ccjsonobjunparseto(void *p);
                         offsetof(mtype, member), cctypeofmindex(mtype, member), enumflagcompose_array); \
     ccaddmember(meta, _member); } while(0);
 
+// 实现成员数组类型
+#define __ccimplementmember_point(mtype,  ntype, member)  do {\
+    ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
+                        offsetof(mtype, member), cctypeofmindex(mtype, member), enumflagcompose_point); \
+    ccaddmember(meta, _member); } while(0);
     
 // 实现基础对象
 // ******************************************************************************

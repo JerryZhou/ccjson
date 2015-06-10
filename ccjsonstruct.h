@@ -11,6 +11,7 @@ extern "C" {
 #define __cc_type_begin __ccdeclareindexbegin
 #define __cc_type_member __ccdeclareindexmember
 #define __cc_type_member_array __ccdeclareindexmember_array
+#define __cc_type_member_point __ccdeclareindexmember_point
 #define __cc_type_end __ccdeclareindexend
 
 #include "ccjsonstruct.inl"
@@ -18,12 +19,14 @@ extern "C" {
 #undef __cc_type_begin
 #undef __cc_type_member
 #undef __cc_type_member_array
+#undef __cc_type_member_point
 #undef __cc_type_end
 
 // 声明类型
 #define __cc_type_begin __ccdeclaretypebegin
 #define __cc_type_member __ccdeclaremember
 #define __cc_type_member_array __ccdeclaremember_array 
+#define __cc_type_member_point __ccdeclaremember_point
 #define __cc_type_end __ccdeclaretypeend
 
 #include "ccjsonstruct.inl"
@@ -31,6 +34,7 @@ extern "C" {
 #undef __cc_type_begin
 #undef __cc_type_member
 #undef __cc_type_member_array
+#undef __cc_type_member_point
 #undef __cc_type_end
  
     

@@ -5,6 +5,35 @@
  * #define __cc_type_end(type)
  * */
 
+// 嵌套结构体
+__cc_type_begin(test_json_sub)
+    __cc_type_member(test_json_sub, ccstring, str) 
+    __cc_type_member(test_json_sub, ccint, i) 
+    __cc_type_member(test_json_sub, ccint64, i64) 
+    __cc_type_member(test_json_sub, ccnumber, number) 
+__cc_type_end(test_json_sub)
+
+// 测试用的结构体
+__cc_type_begin(test_json)
+
+    __cc_type_member(test_json, ccstring, str) 
+    __cc_type_member(test_json, ccint, i) 
+    __cc_type_member(test_json, ccint64, i64) 
+    __cc_type_member(test_json, ccnumber, number) 
+
+    __cc_type_member_point(test_json, ccint, ip) 
+
+    __cc_type_member_array(test_json, ccint, array)
+
+    __cc_type_member_point(test_json, test_json_sub, xsub) 
+
+    __cc_type_member(test_json, test_json_sub, isub) 
+
+    __cc_type_member_array(test_json, test_json_sub, subarray)
+
+__cc_type_end(test_json)
+
+
 // 日期: {有效日期，无效日期}
 __cc_type_begin(config_date)
     __cc_type_member(config_date, ccstring, invaliddate) 

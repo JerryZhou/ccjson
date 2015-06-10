@@ -2017,6 +2017,10 @@ size_t cc_mem_state() {
     return gmemalloc - gmemfree;
 } 
 
+// 返回当前使用的内存总数
+size_t cc_mem_size() {
+    return gmemalloc-gmemfree;
+}
 
 //  申请文本缓存区域
 static char *__cc_alloc(size_t size) {
@@ -2687,6 +2691,16 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
             && json->type != cJSON_Array) {
         return has;
     }
+    // point require
+    if (member && member->compose == enumflagcompose_point ) {
+        void **pointvalue = (void**)value;
+        if (*pointvalue == NULL ) {
+            *pointvalue = cc_alloc(meta->size);
+        }
+        // deref
+        value = *pointvalue;
+    }
+
     switch(json->type) {
         case cJSON_False : {
             cccheckret(meta->type == cctypeofname(ccbool), has);
@@ -2764,6 +2778,8 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
             // release first
             if (*vv) {
                 ccobjreleasearray(meta, value);
+                ccarrayfree(*vv);
+                *vv = NULL;
             }
             if (arraysize) {
                 void *v = ccarraymalloc(arraysize, meta->size, meta->index);
@@ -2780,8 +2796,6 @@ bool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
                         ccarraysetnull(v, i);
                     }
                 }
-            } else {
-                *vv = NULL;
             }
             
             has = true;
@@ -2823,6 +2837,8 @@ bool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json);
 
 // 反向解析
 cJSON *ccunparse(cctypemeta *meta, void *value) {
+    // may be null
+    cccheckret(value, NULL);
     // be sure all the meta will be init before use
     ccinittypemeta(meta);
     // 解析
@@ -2898,6 +2914,11 @@ bool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
         
         cJSON_AddItemToObject(json, mmeta->name, array);
     }else {
+        // if compose point need deref
+        if (mmeta->compose == enumflagcompose_point) {
+            void** pointvalue = (void**)value;
+            value = *pointvalue;
+        }
         cJSON *obj = ccunparse(meta, value);
         if (obj) {
             cJSON_AddItemToObject(json, mmeta->name, obj);
@@ -2951,9 +2972,7 @@ void ccobjreleasearray(cctypemeta* meta, void *value) {
             for (int i=0; i < len; ++i) {
                 ccobjrelease(meta, v + i * meta->size);
             }
-            ccarrayfree(v);
         }
-        *arrayvalue = NULL;
     }
 }
 
@@ -2965,8 +2984,26 @@ bool ccobjreleasemember(ccmembermeta *mmeta, void *value) {
     // release
     if (mmeta->compose == enumflagcompose_array) {
         ccobjreleasearray(meta, value);
+
+        // free array
+        void **arrayvalue = (void**)value;
+        ccarrayfree(*arrayvalue);
+        *arrayvalue = NULL;
     }else {
+        void **pointvalue = NULL;
+        // deref
+        if (mmeta->compose == enumflagcompose_point) {
+            pointvalue = (void**)value;
+            value = *pointvalue;
+        }
+        
         ccobjrelease(meta, value);
+        
+        // free obj
+        if (pointvalue) {
+            cc_free((char*)(*pointvalue));
+            *pointvalue = NULL;
+        }
     }
     return true;
 }

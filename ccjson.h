@@ -252,7 +252,7 @@ char* ccjsonobjunparseto(void *p);
 // 辅助宏：用来创建各种元信息
 #define cctypeofname(type) __cc_name_##type
 #define cctypeofmeta(type) __cc_meta_##type
-#define cctypeofmindex(type, member) __cc_index_##type##_##member
+#define cctypeofmindex(type, member) __cc_index_m_##type##_mmm_##member
 #define cctypeofmcount(type) __cc_index_max_##type
 
 // 声明成员索引

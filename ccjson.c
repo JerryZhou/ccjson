@@ -332,7 +332,7 @@ CC_STATIC int dictResize(dict *d)
     int minimal;
 
     if (!dict_can_resize || dictIsRehashing(d)) return DICT_ERR;
-    minimal = d->ht[0].used;
+    minimal = (int)d->ht[0].used;
     if (minimal < DICT_HT_INITIAL_SIZE)
         minimal = DICT_HT_INITIAL_SIZE;
     return dictExpand(d, minimal);
@@ -773,15 +773,15 @@ CC_STATIC dictEntry *dictGetRandomKey(dict *d)
         do {
             /* We are sure there are no elements in indexes from 0
              * to rehashidx-1 */
-            h = d->rehashidx + (random() % (d->ht[0].size +
+            h = (unsigned int)(d->rehashidx + (random() % (d->ht[0].size +
                                             d->ht[1].size -
-                                            d->rehashidx));
+                                            d->rehashidx)));
             he = (h >= d->ht[0].size) ? d->ht[1].table[h - d->ht[0].size] :
                                       d->ht[0].table[h];
         } while(he == NULL);
     } else {
         do {
-            h = random() & d->ht[0].sizemask;
+            h = (unsigned int)(random() & d->ht[0].sizemask);
             he = d->ht[0].table[h];
         } while(he == NULL);
     }
@@ -830,7 +830,7 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
     unsigned int stored = 0, maxsizemask;
     unsigned int maxsteps;
 
-    if (dictSize(d) < count) count = dictSize(d);
+    if ((unsigned int)dictSize(d) < count) count = (unsigned int)dictSize(d);
     maxsteps = count*10;
 
     /* Try to do a rehashing work proportional to 'count'. */
@@ -842,9 +842,9 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
     }
 
     tables = dictIsRehashing(d) ? 2 : 1;
-    maxsizemask = d->ht[0].sizemask;
+    maxsizemask = (unsigned int)d->ht[0].sizemask;
     if (tables > 1 && maxsizemask < d->ht[1].sizemask)
-        maxsizemask = d->ht[1].sizemask;
+        maxsizemask = (unsigned int)d->ht[1].sizemask;
 
     /* Pick a random point inside the larger table. */
     unsigned int i = random() & maxsizemask;
@@ -859,7 +859,7 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
                  * table, there will be no elements in both tables up to
                  * the current rehashing index, so we jump if possible.
                  * (this happens when going from big to small table). */
-                if (i >= d->ht[1].size) i = d->rehashidx;
+                if (i >= d->ht[1].size) i = (unsigned int)d->rehashidx;
                 continue;
             }
             if (i >= d->ht[j].size) continue; /* Out of range for this table. */
@@ -2450,7 +2450,7 @@ int ccobjmindex(struct cctypemeta *meta, const char* member) {
  * */
 struct ccmembermeta * ccobjmmetabyindex(struct cctypemeta *meta, int index) {
     cccheckret(meta, NULL);
-    int len = ccarraylen(meta->members);
+    int len = (int)ccarraylen(meta->members);
     cccheckret(index >=0 && index<len, NULL);
     return meta->indexmembers[index];
 }

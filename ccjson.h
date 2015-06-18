@@ -25,7 +25,13 @@
 
 #include <stdlib.h>
 #include <stddef.h>
-#include <stdbool.h>
+#include <time.h>
+#ifdef WIN32
+#   include <windows.h>
+#else
+#   include <stdbool.h>
+#endif
+
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus

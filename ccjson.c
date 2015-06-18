@@ -28,7 +28,13 @@
 #include <limits.h>
 #include <ctype.h>
 #include <assert.h>
-#include <sys/time.h>
+#include <time.h>
+#ifdef WIN32
+#   include <windows.h>
+#else
+#   include <sys/time.h>
+#endif
+
 
 #include "ccjson.h"
 
@@ -1956,6 +1962,28 @@ void cJSON_Minify(char *json)
 #define cccheck(exp) do { if(!(exp)) { return ; } } while(0)
 #define cccheckret(exp, ret) do { if(!(exp)) { return ret; }} while(0)
 #define __ccmalloc(type) (type*)cc_alloc(sizeof(type));
+
+#ifdef WIN32
+int
+gettimeofday(struct timeval *tp, void *tzp)
+{
+    time_t clock;
+    struct tm tm;
+    SYSTEMTIME wtm;
+    GetLocalTime(&wtm);
+    tm.tm_year     = wtm.wYear - 1900;
+    tm.tm_mon     = wtm.wMonth - 1;
+    tm.tm_mday     = wtm.wDay;
+    tm.tm_hour     = wtm.wHour;
+    tm.tm_min     = wtm.wMinute;
+    tm.tm_sec     = wtm.wSecond;
+    tm. tm_isdst    = -1;
+    clock = mktime(&tm);
+    tp->tv_sec = clock;
+    tp->tv_usec = wtm.wMilliseconds * 1000;
+    return (0);
+}
+#endif
 
 // 获取当前系统的纳秒数
 int64_t ccgetcurnano() {

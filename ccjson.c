@@ -2103,11 +2103,12 @@ static const int gmemcachecount = sizeof(gmemcache)/sizeof(gmemcache[0]);
 // 初始化内存条
 static void __ccinitmemcache() {
     static int init = 0;
+    int i;
     if (init) {
         return;
     }
     ++init;
-    for (int i=0; i<gmemcachecount; ++i) {
+    for (i=0; i<gmemcachecount; ++i) {
         gmemcache[i].size = __cc_isize<<i;
         gmemcache[i].capacity = 100;
         gmemcache[i].len = 0;
@@ -2123,7 +2124,8 @@ static size_t __ccmemcachestate() {
     printf("[CCJSON-Memory-Cache] count: %d\n", 
             gmemcachecount);
     size_t memsize = 0;
-    for (int i=0; i<gmemcachecount; ++i) {
+    int i;
+    for (i=0; i<gmemcachecount; ++i) {
         printf("[CCJSON-Memory-Cache] ID: %d, "
                 "chuck size: %ld, "
                 "capacity: %ld, " 
@@ -2164,7 +2166,8 @@ void cc_mem_cache_clearof(int index) {
 
 // 清理所有缓冲区
 void cc_mem_cache_clear() {
-    for (int i=0; i<gmemcachecount; ++i) {
+    int i;
+    for (i=0; i<gmemcachecount; ++i) {
         cc_mem_cache_clearof(i);
     }
 }
@@ -2715,6 +2718,7 @@ ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member
     ccinittypemeta(meta);
     // 解析
     ccibool has = ccino;
+    int i;
     // array require
     if (member && member->compose == enumflagcompose_array 
             && json->type != cJSON_Array) {
@@ -2814,7 +2818,7 @@ ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member
                 void *v = ccarraymalloc(arraysize, meta->size, meta->index);
                 *vv = v;
                 cJSON* child = NULL;
-                for (int i=0; i<arraysize; ++i) {
+                for (i=0; i<arraysize; ++i) {
                     child = cJSON_GetArrayItem(json, i);
                     // should call ccparse first
                     if (ccparse(meta, (char*)v + i * meta->size, child, NULL)) {
@@ -2919,6 +2923,7 @@ ccibool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
     cccheckret(json, ccino);
     cctypemeta *meta = mmeta->type;
     cccheckret(meta, ccino);
+    int i;
     // unparse
     if (mmeta->compose == enumflagcompose_array) {
         void **arrayvalue = (void**)value;
@@ -2927,7 +2932,7 @@ ccibool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
         cJSON *array = cJSON_CreateArray();
         if (len) {
             char *v = (char*)(varray);
-            for (int i=0; i < len; ++i) {
+            for (i=0; i < len; ++i) {
                 cJSON * obj = NULL;
                 // null
                 if (ccarrayisnull(varray, i)) {
@@ -2993,12 +2998,14 @@ void ccobjrelease(cctypemeta *meta, void *value) {
 
 // 释放数组相关资源
 void ccobjreleasearray(cctypemeta* meta, void *value) {
+    int i, len;
+    char *v;
     void **arrayvalue = (void**)value;
     if (*arrayvalue) {
-        int len = (int)ccarraylen(*arrayvalue);
+        len = (int)ccarraylen(*arrayvalue);
         if (len) {
-            char *v = (char*)(*arrayvalue);
-            for (int i=0; i < len; ++i) {
+            v = (char*)(*arrayvalue);
+            for (i=0; i < len; ++i) {
                 ccobjrelease(meta, v + i * meta->size);
             }
         }

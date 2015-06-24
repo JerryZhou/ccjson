@@ -307,7 +307,7 @@ char* ccjsonobjunparseto(void *p);
             cctypeofmetavar(mtype).membercount = cctypeofmcount(mtype), \
             cctypeofmetavar(mtype).indexmembers= NULL,\
             cctypeofmetavar(mtype).index=0, \
-            cctypeofmetavar(mtype).init=__cc_init_##mtype\
+            cctypeofmetavar(mtype).init=__cc_init_##mtype;\
         }\
         return &cctypeofmetavar(mtype);\
     }
@@ -357,7 +357,7 @@ char* ccjsonobjunparseto(void *p);
             cctypeofmetavar(mtype).membercount = cctypeofmcount(mtype), \
             cctypeofmetavar(mtype).indexmembers= NULL,\
             cctypeofmetavar(mtype).index=0, \
-            cctypeofmetavar(mtype).init=__cc_init_##mtype\
+            cctypeofmetavar(mtype).init=__cc_init_##mtype;\
         }\
         return &cctypeofmetavar(mtype);\
     }

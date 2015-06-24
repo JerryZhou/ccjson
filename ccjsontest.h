@@ -59,7 +59,7 @@ SP_CASE(ccjson, eg0) {
         ccparsefrom(cctypeofmetaget(config_app), &app, json); 
     }
     size_t m3 = cc_mem_state();
-    SP_TRUE(m2 > m1);
+    SP_TRUE(m2 >= m1);
     SP_EQUAL(m2, m3);
     
     cc_free(json);

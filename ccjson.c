@@ -838,6 +838,9 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
     unsigned int tables; /* 1 or 2 tables? */
     unsigned int stored = 0, maxsizemask;
     unsigned int maxsteps;
+    unsigned int i;
+    unsigned int emptylen;
+    dictEntry *he;
 
     if ((unsigned int)dictSize(d) < count) count = (unsigned int)dictSize(d);
     maxsteps = count*10;
@@ -856,8 +859,8 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
         maxsizemask = (unsigned int)d->ht[1].sizemask;
 
     /* Pick a random point inside the larger table. */
-    unsigned int i = random() & maxsizemask;
-    unsigned int emptylen = 0; /* Continuous empty entries so far. */
+    i = random() & maxsizemask;
+    emptylen = 0; /* Continuous empty entries so far. */
     while(stored < count && maxsteps--) {
         for (j = 0; j < tables; j++) {
             /* Invariant of the dict.c rehashing: up to the indexes already
@@ -872,7 +875,7 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
                 continue;
             }
             if (i >= d->ht[j].size) continue; /* Out of range for this table. */
-            dictEntry *he = d->ht[j].table[i];
+            he = d->ht[j].table[i];
 
             /* Count contiguous empty buckets, and jump to other
              * locations if they reach 'count' (with a minimum of 5). */
@@ -2477,7 +2480,7 @@ size_t ccarraylen(void *array) {
 // ******************************************************************************
 // 根据名字找索引 {name : parse_value};
 static dict *gparses = NULL;
-static struct cctypemeta *gtypemetas[CCMaxTypeCount] = {};
+static struct cctypemeta *gtypemetas[CCMaxTypeCount];
 static int gtypemetascnt = 0;
 
 #define __ccobj(p) (ccjson_obj*)(p)
@@ -2998,7 +3001,7 @@ ccibool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
             pointvalue = (void**)value;
             value = *pointvalue;
         }
-        cJSON *obj = ccunparse(meta, value);
+        obj = ccunparse(meta, value);
         if (obj) {
             cJSON_AddItemToObject(json, mmeta->name, obj);
         }

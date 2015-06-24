@@ -19,15 +19,15 @@ int main(int argc, const char** argv){
     cc_unused(argv);
     
     ccconfig config = {0};
-    ccparsefrom(&cctypeofmeta(ccconfig), &config, "{\"ver\":2, \"skips\":[1,2,3], \"has\":true, \"detail\":\"abcdefg\"}");
+    ccparsefrom(cctypeofmeta(ccconfig), &config, "{\"ver\":2, \"skips\":[1,2,3], \"has\":true, \"detail\":\"abcdefg\"}");
     
     {
-        char * xxjson = ccunparseto(&cctypeofmeta(ccconfig), &config);
+        char * xxjson = ccunparseto(cctypeofmeta(ccconfig), &config);
         printf("unparse : %s \n", xxjson);
         cc_free(xxjson);
     }
     
-    ccobjrelease(&cctypeofmeta(ccconfig), &config);
+    ccobjrelease(cctypeofmeta(ccconfig), &config);
 
     runAllTest();
     

@@ -253,7 +253,7 @@ ccibool ccjsonobjparsefrom(void *p, const char* json);
 char* ccjsonobjunparseto(void *p);
 
 // 对象申请宏
-#define iccalloc(type) ((type*)ccjsonobjalloc(&cctypeofmeta(type)))
+#define iccalloc(type) ((type*)ccjsonobjalloc(cctypeofmeta(type)))
 // 对象资源释放
 #define iccrelease(p) ccjsonobjrelease(p)
 // 对象释放宏
@@ -266,9 +266,12 @@ char* ccjsonobjunparseto(void *p);
 // ******************************************************************************
 // 辅助宏：用来创建各种元信息
 #define cctypeofname(type) __cc_name_##type
-#define cctypeofmeta(type) __cc_meta_##type
+#define cctypeofmeta(type) __cc_meta_get_point_##type##_()
 #define cctypeofmindex(type, member) __cc_index_m_##type##_mmm_##member
 #define cctypeofmcount(type) __cc_index_max_##type
+
+#define cctypeofmetavar(type) __cc_meta_var_point_##type
+#define cctypeofmetaget(type) cctypeofmeta(type)
 
 // 声明成员索引
 #define __ccdeclareindexbegin(type) typedef enum __cc_index_##type {
@@ -281,7 +284,7 @@ char* ccjsonobjunparseto(void *p);
 #define __ccdeclaretype(mtype) \
     extern const int cctypeofmcount(mtype);\
     extern const char* cctypeofname(mtype); \
-    extern struct cctypemeta cctypeofmeta(mtype);
+    extern struct cctypemeta *cctypeofmetaget(mtype);
 
 // 实现元信息
 #define __ccimplementtype(mtype) \
@@ -294,15 +297,18 @@ char* ccjsonobjunparseto(void *p);
         meta->index = ccaddtypemeta(meta); \
         return meta->index;\
     }\
-    struct cctypemeta cctypeofmeta(mtype) =  { \
-        .type=#mtype, \
-        .size=sizeof(mtype), \
-        .members=NULL, \
-        .membercount = cctypeofmcount(mtype), \
-        .indexmembers= NULL,\
-        .index=0, \
-        .init=__cc_init_##mtype\
-    };
+    struct cctypemeta * cctypeofmetaget(mtype) {\
+        static struct cctypemeta cctypeofmetavar(mtype) =  { \
+            .type=#mtype, \
+            .size=sizeof(mtype), \
+            .members=NULL, \
+            .membercount = cctypeofmcount(mtype), \
+            .indexmembers= NULL,\
+            .index=0, \
+            .init=__cc_init_##mtype\
+            };\
+        return &cctypeofmetavar(mtype);\
+    }
 
 // 复杂类型
 #define __ccdeclaretypebegin(mtype) \
@@ -324,7 +330,7 @@ char* ccjsonobjunparseto(void *p);
 #define __ccdeclaretypeend(mtype) \
     } mtype; \
     extern const char* cctypeofname(mtype); \
-    extern struct cctypemeta cctypeofmeta(mtype); \
+    extern struct cctypemeta *cctypeofmetaget(mtype); \
 
 // 实现有成员变量的类型
 #define __ccimplementtypebegin(mtype) \
@@ -339,31 +345,35 @@ char* ccjsonobjunparseto(void *p);
 #define __ccimplementtypeend(mtype) \
         return meta->index;\
     }\
-    struct cctypemeta cctypeofmeta(mtype) =  { \
-        .type=#mtype, \
-        .size=sizeof(mtype), \
-        .members=NULL, \
-        .membercount = cctypeofmcount(mtype), \
-        .indexmembers= NULL,\
-        .index=0, \
-        .init=__cc_init_##mtype\
-    };
+    struct cctypemeta * cctypeofmetaget(mtype) {\
+        static struct cctypemeta cctypeofmetavar(mtype) =  { \
+            .type=#mtype, \
+            .size=sizeof(mtype), \
+            .members=NULL, \
+            .membercount = cctypeofmcount(mtype), \
+            .indexmembers= NULL,\
+            .index=0, \
+            .init=__cc_init_##mtype\
+        };\
+        return &cctypeofmetavar(mtype);\
+    }
+
 
 // 实现成员类型
 #define __ccimplementmember(mtype, ntype, member)  do {\
-    ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
+    ccmembermeta *_member = ccmakememberwithmeta(#member, cctypeofmetaget(ntype), \
                         offsetof(mtype, member), cctypeofmindex(mtype, member), 0); \
     ccaddmember(meta, _member); } while(0);
 
 // 实现成员数组类型
 #define __ccimplementmember_array(mtype,  ntype, member)  do {\
-    ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
+    ccmembermeta *_member = ccmakememberwithmeta(#member, cctypeofmetaget(ntype), \
                         offsetof(mtype, member), cctypeofmindex(mtype, member), enumflagcompose_array); \
     ccaddmember(meta, _member); } while(0);
 
 // 实现成员数组类型
 #define __ccimplementmember_point(mtype,  ntype, member)  do {\
-    ccmembermeta *_member = ccmakememberwithmeta(#member, &cctypeofmeta(ntype), \
+    ccmembermeta *_member = ccmakememberwithmeta(#member, cctypeofmetaget(ntype), \
                         offsetof(mtype, member), cctypeofmindex(mtype, member), enumflagcompose_point); \
     ccaddmember(meta, _member); } while(0);
     

@@ -50,13 +50,13 @@ SP_CASE(ccjson, eg0) {
     size_t m1 = cc_mem_state();
     print("parse 1000 times about app json\n");
     for (int i=0; i<1000; ++i) {
-        ccparsefrom(&cctypeofmeta(config_app), &app, json); 
+        ccparsefrom(cctypeofmetaget(config_app), &app, json); 
     }
     size_t m2 = cc_mem_state();
 
     print("parse anthor 1000 times about app json\n");
     for (int i=0; i<1000; ++i) {
-        ccparsefrom(&cctypeofmeta(config_app), &app, json); 
+        ccparsefrom(cctypeofmetaget(config_app), &app, json); 
     }
     size_t m3 = cc_mem_state();
     SP_TRUE(m2 > m1);
@@ -64,13 +64,13 @@ SP_CASE(ccjson, eg0) {
     
     cc_free(json);
 
-    char *unjson = ccunparseto(&cctypeofmeta(config_app), &app);
+    char *unjson = ccunparseto(cctypeofmetaget(config_app), &app);
 
     print("unjson: %s\n", unjson);
 
     cc_free(unjson);
 
-    ccobjrelease(&cctypeofmeta(config_app), &app);
+    ccobjrelease(cctypeofmetaget(config_app), &app);
 
     SP_TRUE(1);
 
@@ -86,13 +86,13 @@ SP_CASE(ccjson, eg1) {
     ccobjset(&date, cctypeofmindex(config_date, invaliddate));
     ccobjset(&date, cctypeofmindex(config_date, validdate));
 
-    char *unjson = ccunparseto(&cctypeofmeta(config_date), &date);
+    char *unjson = ccunparseto(cctypeofmetaget(config_date), &date);
     print("unjson: %s\n", unjson);
 
     cc_write_file(unjson, "date.json");
     cc_free(unjson);
 
-    SP_EQUAL(ccobjmcount(&cctypeofmeta(config_date)), 2);
+    SP_EQUAL(ccobjmcount(cctypeofmetaget(config_date)), 2);
 
     membegin("eg1");
 }
@@ -224,8 +224,8 @@ SP_CASE(ccjson, int64) {
 
 SP_CASE(ccjson, point) {
     
-    ccinittypemeta(&cctypeofmeta(test_json));
-    ccinittypemeta(&cctypeofmeta(test_json_sub));
+    ccinittypemeta(cctypeofmetaget(test_json));
+    ccinittypemeta(cctypeofmetaget(test_json_sub));
     
     cc_enablememorycache(ccino);
 

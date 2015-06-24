@@ -43,7 +43,7 @@ SP_CASE(ccjson, ccarraymalloc) {
 SP_CASE(ccjson, eg0) {
     config_app app = {0};
     membegin("eg0-begin");
-    cc_enablememorycache(false);
+    cc_enablememorycache(ccino);
 
     char *json = cc_read_file("app.json");
 
@@ -74,7 +74,7 @@ SP_CASE(ccjson, eg0) {
 
     SP_TRUE(1);
 
-    cc_enablememorycache(true);
+    cc_enablememorycache(cciyes);
 
     membegin("eg0");
 }
@@ -122,7 +122,7 @@ SP_CASE(ccjson, eg3) {
     print("config->ver: %d\n", config->ver);
     print("config->has: %d\n", config->has);
     SP_EQUAL(config->ver, 1);
-    SP_EQUAL(config->has, true);
+    SP_EQUAL(config->has, cciyes);
     SP_EQUAL(strcmp(config->detail, "no details") , 0);
 
         SP_EQUAL(config->skips[0], 1);
@@ -133,7 +133,7 @@ SP_CASE(ccjson, eg3) {
 
     iccparse(config, json1);
     SP_EQUAL(config->ver, 2);
-    SP_EQUAL(config->has, true);
+    SP_EQUAL(config->has, cciyes);
     SP_EQUAL(strcmp(config->detail, "no details") , 0);
     SP_EQUAL(config->skips[0], 0);
         SP_EQUAL(config->skips[1], 1);
@@ -142,8 +142,11 @@ SP_CASE(ccjson, eg3) {
 
     const char* json2 = "{\"ver\":3, \"has\":false, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":true}";
     iccparse(config, json2);
+    print("config->ver: %d\n", config->ver);
+    print("config->has: %d\n", config->has);
+
     SP_EQUAL(config->ver, 3);
-    SP_EQUAL(config->has, false);
+    SP_EQUAL(config->has, ccino);
     SP_EQUAL(strcmp(config->detail, "no details") , 0);
     SP_EQUAL(config->skips[0], 0);
         SP_EQUAL(config->skips[1], 1);
@@ -224,7 +227,7 @@ SP_CASE(ccjson, point) {
     ccinittypemeta(&cctypeofmeta(test_json));
     ccinittypemeta(&cctypeofmeta(test_json_sub));
     
-    cc_enablememorycache(false);
+    cc_enablememorycache(ccino);
 
     size_t current = cc_mem_size();
     {
@@ -298,7 +301,7 @@ SP_CASE(ccjson, point) {
 
     SP_EQUAL(xcurrent, current);    // check if we have memory leak
 
-    cc_enablememorycache(true);
+    cc_enablememorycache(cciyes);
 }
 
 SP_CASE(ccjson, arraymalloc) {
@@ -335,23 +338,23 @@ SP_CASE(ccjson, array) {
     iccparse(config, json);
     char *unjson = iccunparse(config);
     
-    bool has0 = ccarrayhas(config->skips, 0);
-    bool has1 = ccarrayhas(config->skips, 1);
-    bool has2 = ccarrayhas(config->skips, 2);
+    ccibool has0 = ccarrayhas(config->skips, 0);
+    ccibool has1 = ccarrayhas(config->skips, 1);
+    ccibool has2 = ccarrayhas(config->skips, 2);
     
-    bool null0 = ccarrayisnull(config->skips, 0);
-    bool null1 = ccarrayisnull(config->skips, 1);
-    bool null2 = ccarrayisnull(config->skips, 2);
+    ccibool null0 = ccarrayisnull(config->skips, 0);
+    ccibool null1 = ccarrayisnull(config->skips, 1);
+    ccibool null2 = ccarrayisnull(config->skips, 2);
     
     iccparse(config, unjson);
     
-    bool xhas0 = ccarrayhas(config->skips, 0);
-    bool xhas1 = ccarrayhas(config->skips, 1);
-    bool xhas2 = ccarrayhas(config->skips, 2);
+    ccibool xhas0 = ccarrayhas(config->skips, 0);
+    ccibool xhas1 = ccarrayhas(config->skips, 1);
+    ccibool xhas2 = ccarrayhas(config->skips, 2);
     
-    bool xnull0 = ccarrayisnull(config->skips, 0);
-    bool xnull1 = ccarrayisnull(config->skips, 1);
-    bool xnull2 = ccarrayisnull(config->skips, 2);
+    ccibool xnull0 = ccarrayisnull(config->skips, 0);
+    ccibool xnull1 = ccarrayisnull(config->skips, 1);
+    ccibool xnull2 = ccarrayisnull(config->skips, 2);
     
     SP_EQUAL(has0, xhas0);
     SP_EQUAL(has1, xhas1);
@@ -361,13 +364,13 @@ SP_CASE(ccjson, array) {
     SP_EQUAL(null1, xnull1);
     SP_EQUAL(null2, xnull2);
     
-    SP_EQUAL(has0, true);
-    SP_EQUAL(has1, false);
-    SP_EQUAL(has2, true);
+    SP_EQUAL(has0, cciyes);
+    SP_EQUAL(has1, ccino);
+    SP_EQUAL(has2, cciyes);
     
-    SP_EQUAL(null0, false);
-    SP_EQUAL(null1, true);
-    SP_EQUAL(null2, false);
+    SP_EQUAL(null0, ccino);
+    SP_EQUAL(null1, cciyes);
+    SP_EQUAL(null2, ccino);
     
     iccfree(unjson);
     iccfree(config);
@@ -387,15 +390,19 @@ SP_CASE(ccjson, ccarrayfree) {
 
     SP_EQUAL(ccarraylen(array), 3);
 
-    SP_EQUAL(ccarrayhas(array, 0), true);
-    SP_EQUAL(ccarrayhas(array, 1), true);
-    SP_EQUAL(ccarrayhas(array, 2), true);
+    print("array [0] = %d\n", ccarrayhas(array, 0));
+    print("array [1] = %d\n", ccarrayhas(array, 1));
+    print("array [2] = %d\n", ccarrayhas(array, 2));
+
+    SP_EQUAL(ccarrayhas(array, 0), cciyes);
+    SP_EQUAL(ccarrayhas(array, 1), cciyes);
+    SP_EQUAL(ccarrayhas(array, 2), cciyes);
 
     iccfree(array);
 }
 
 SP_CASE(ccjson, cc_mem_cache) {
-    cc_enablememorycache(true);
+    cc_enablememorycache(cciyes);
     cc_mem_cache_clear();
     cc_mem_cache_state();
     SP_EQUAL(cc_mem_cache_current(1), 0);
@@ -454,7 +461,7 @@ SP_CASE(ccjson, benchmarktestcomplex) {
 }
 
 SP_CASE(ccjson, benchmarktestcomplexdisablememcache) {
-    cc_enablememorycache(false);
+    cc_enablememorycache(ccino);
     config_app *app = iccalloc(config_app);
     char *json = cc_read_file("app.json");
     int64_t cur = ccgetcurnano();
@@ -465,7 +472,7 @@ SP_CASE(ccjson, benchmarktestcomplexdisablememcache) {
     print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
     iccfree(json);
     iccfree(app);
-    cc_enablememorycache(true);
+    cc_enablememorycache(cciyes);
     SP_TRUE(1);
 }
 

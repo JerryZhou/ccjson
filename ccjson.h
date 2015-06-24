@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <time.h>
+#include <inttypes.h>
 #ifdef WIN32
 #   include <windows.h>
 #else
@@ -37,6 +38,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// ccibool
+typedef int ccibool;
+
+#define ccitrue 1
+#define ccifalse 0
+#define cciyes 1
+#define ccino 0
     
 // 一个类型最多成员个数
 #define CCMaxMemberCount 64 
@@ -53,7 +62,7 @@ int64_t ccgetnextnano();
 
 // ******************************************************************************
 // 设置内存缓冲区，并返回设置前的状态
-bool cc_enablememorycache(bool enable); 
+ccibool cc_enablememorycache(ccibool enable); 
 // 返回当前使用的内存总数
 size_t cc_mem_size();
 //  申请文本缓存区域, 以0结尾, 返回的字符串需要调用 cc_free
@@ -156,29 +165,29 @@ struct ccmembermeta *ccobjmmetabyindex(struct cctypemeta *meta, int index);
 int ccobjmcount(struct cctypemeta *meta);
 
 // 结构体成员操作
-bool ccobjhas(void *p, int index);
+ccibool ccobjhas(void *p, int index);
 void ccobjset(void *p, int index);
 void ccobjunset(void *p, int index);
 
 // 结构体成员为空的操作
-bool ccobjisnull(void *p, int index);
+ccibool ccobjisnull(void *p, int index);
 void ccobjsetnull(void *p, int index);
 void ccobjunsetnull(void *p, int index);
 
 // 结构体成员操作
-bool ccarrayhas(void *p, int index);
+ccibool ccarrayhas(void *p, int index);
 void ccarrayset(void *p, int index);
 void ccarrayunset(void *p, int index);
 
 // 结构体成员为空的操作
-bool ccarrayisnull(void *p, int index);
+ccibool ccarrayisnull(void *p, int index);
 void ccarraysetnull(void *p, int index);
 void ccarrayunsetnull(void *p, int index);
 
 // 设置对象是否是Null
-void ccobjnullset(void *p, bool isnull);
+void ccobjnullset(void *p, ccibool isnull);
 // 判断对象是否是Null
-bool ccobjnullis(void *p);
+ccibool ccobjnullis(void *p);
 
 /**
  * 造一个成员
@@ -220,7 +229,7 @@ void ccobjrelease(cctypemeta *meta, void *p);
 void ccobjreleasearray(cctypemeta* meta, void *value);
 
 // 从字符串解析
-bool ccparsefrom(cctypemeta *meta, void *value, const char *json);
+ccibool ccparsefrom(cctypemeta *meta, void *value, const char *json);
 
 // 把对象解析到字符串： 输出的字符串自己负责释放 free()
 char *ccunparseto(cctypemeta *meta, void *value);
@@ -238,7 +247,7 @@ void ccjsonobjrelease(void *p);
 void ccjsonobjfree(void *p);
 
 // 从json序列化对象
-bool ccjsonobjparsefrom(void *p, const char* json);
+ccibool ccjsonobjparsefrom(void *p, const char* json);
 
 // 把对象序列化到json
 char* ccjsonobjunparseto(void *p);
@@ -361,7 +370,7 @@ char* ccjsonobjunparseto(void *p);
 // 实现基础对象
 // ******************************************************************************
 typedef char* ccstring;
-typedef bool ccbool;
+typedef int ccbool;
 typedef double ccnumber;
 typedef int ccint;
 typedef int64_t ccint64;

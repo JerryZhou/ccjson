@@ -298,15 +298,17 @@ char* ccjsonobjunparseto(void *p);
         return meta->index;\
     }\
     struct cctypemeta * cctypeofmetaget(mtype) {\
-        static struct cctypemeta cctypeofmetavar(mtype) =  { \
-            .type=#mtype, \
-            .size=sizeof(mtype), \
-            .members=NULL, \
-            .membercount = cctypeofmcount(mtype), \
-            .indexmembers= NULL,\
-            .index=0, \
-            .init=__cc_init_##mtype\
-            };\
+        static int init = 0;\
+        static struct cctypemeta cctypeofmetavar(mtype);\
+        if (init == 0) {\
+            cctypeofmetavar(mtype).type=#mtype, \
+            cctypeofmetavar(mtype).size=sizeof(mtype), \
+            cctypeofmetavar(mtype).members=NULL, \
+            cctypeofmetavar(mtype).membercount = cctypeofmcount(mtype), \
+            cctypeofmetavar(mtype).indexmembers= NULL,\
+            cctypeofmetavar(mtype).index=0, \
+            cctypeofmetavar(mtype).init=__cc_init_##mtype\
+        }\
         return &cctypeofmetavar(mtype);\
     }
 
@@ -346,15 +348,17 @@ char* ccjsonobjunparseto(void *p);
         return meta->index;\
     }\
     struct cctypemeta * cctypeofmetaget(mtype) {\
-        static struct cctypemeta cctypeofmetavar(mtype) =  { \
-            .type=#mtype, \
-            .size=sizeof(mtype), \
-            .members=NULL, \
-            .membercount = cctypeofmcount(mtype), \
-            .indexmembers= NULL,\
-            .index=0, \
-            .init=__cc_init_##mtype\
-        };\
+        static int init = 0;\
+        static struct cctypemeta cctypeofmetavar(mtype);\
+        if (init == 0) {\
+            cctypeofmetavar(mtype).type=#mtype, \
+            cctypeofmetavar(mtype).size=sizeof(mtype), \
+            cctypeofmetavar(mtype).members=NULL, \
+            cctypeofmetavar(mtype).membercount = cctypeofmcount(mtype), \
+            cctypeofmetavar(mtype).indexmembers= NULL,\
+            cctypeofmetavar(mtype).index=0, \
+            cctypeofmetavar(mtype).init=__cc_init_##mtype\
+        }\
         return &cctypeofmetavar(mtype);\
     }
 

@@ -26,18 +26,15 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <time.h>
-#include <inttypes.h>
-#ifdef WIN32
-#   include <windows.h>
-#else
-#   include <stdbool.h>
-#endif
-
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// int64
+typedef signed long long ccint64;
+typedef unsigned long long ccuint64;
 
 // ccibool
 typedef int ccibool;
@@ -54,11 +51,11 @@ typedef int ccibool;
 
 // ******************************************************************************
 // 获取当前系统的纳秒数
-int64_t ccgetcurnano();
+ccint64 ccgetcurnano();
 // 获取当前系统的毫秒数
-int64_t ccgetcurtick();
+ccint64 ccgetcurtick();
 // 获取系统的下一个唯一的事件纳秒数
-int64_t ccgetnextnano();
+ccint64 ccgetnextnano();
 
 // ******************************************************************************
 // 设置内存缓冲区，并返回设置前的状态
@@ -301,6 +298,7 @@ char* ccjsonobjunparseto(void *p);
         static int init = 0;\
         static struct cctypemeta cctypeofmetavar(mtype);\
         if (init == 0) {\
+            init = 1;\
             cctypeofmetavar(mtype).type=#mtype, \
             cctypeofmetavar(mtype).size=sizeof(mtype), \
             cctypeofmetavar(mtype).members=NULL, \
@@ -351,6 +349,7 @@ char* ccjsonobjunparseto(void *p);
         static int init = 0;\
         static struct cctypemeta cctypeofmetavar(mtype);\
         if (init == 0) {\
+            init = 1;\
             cctypeofmetavar(mtype).type=#mtype, \
             cctypeofmetavar(mtype).size=sizeof(mtype), \
             cctypeofmetavar(mtype).members=NULL, \
@@ -387,7 +386,6 @@ typedef char* ccstring;
 typedef int ccbool;
 typedef double ccnumber;
 typedef int ccint;
-typedef int64_t ccint64;
 
 // 声明基础类型
 __ccdeclaretype(ccint)

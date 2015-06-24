@@ -53,8 +53,8 @@ typedef struct dictEntry {
     void *key;
     union {
         void *val;
-        uint64_t u64;
-        int64_t s64;
+        ccuint64 u64;
+        ccint64 s64;
         double d;
     } v;
     struct dictEntry *next;
@@ -1297,7 +1297,7 @@ typedef struct cJSON {
 
     char *valuestring;          /* The item's string, if type==cJSON_String */
     int valueint;               /* The item's number, if type==cJSON_Number */
-    int64_t valueint64;         /* The item's number, if type==cJSON_Number */
+    ccint64 valueint64;         /* The item's number, if type==cJSON_Number */
     double valuedouble;         /* The item's number, if type==cJSON_Number */
 
     char *string;               /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
@@ -1450,11 +1450,11 @@ void cJSON_Delete(cJSON *c)
 static const char *parse_number(cJSON *item,const char *num)
 {
 	double n=0,sign=1,scale=0;int subscale=0,signsubscale=1;
-    int64_t n64=0;
+    ccint64 n64=0;
 
 	if (*num=='-') sign=-1,num++;	/* Has sign? */
 	if (*num=='0') num++;			/* is zero */
-	if (*num>='1' && *num<='9')	do	{ n=(n*10.0)+(*num++ -'0'); n64 = (int64_t)n; }	while (*num>='0' && *num<='9');	/* Number? */
+	if (*num>='1' && *num<='9')	do	{ n=(n*10.0)+(*num++ -'0'); n64 = (ccint64)n; }	while (*num>='0' && *num<='9');	/* Number? */
 	if (*num=='.' && num[1]>='0' && num[1]<='9') {num++;		do	n=(n*10.0)+(*num++ -'0'),scale--; while (*num>='0' && *num<='9');}	/* Fractional part? */
 	if (*num=='e' || *num=='E')		/* Exponent? */
 	{	num++;if (*num=='+') num++;	else if (*num=='-') signsubscale=-1,num++;		/* With sign? */
@@ -1901,7 +1901,7 @@ cJSON *cJSON_CreateTrue(void)					{cJSON *item=cJSON_New_Item();if(item)item->ty
 cJSON *cJSON_CreateFalse(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_False;return item;}
 cJSON *cJSON_CreateBool(int b)					{cJSON *item=cJSON_New_Item();if(item)item->type=b?cJSON_True:cJSON_False;return item;}
 cJSON *cJSON_CreateNumber(double num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valuedouble=num;item->valueint=(int)num;}return item;}
-cJSON *cJSON_CreateNumber64(int64_t num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valueint64 = num; item->valuedouble=num;item->valueint=(int)num;}return item;}
+cJSON *cJSON_CreateNumber64(ccint64 num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valueint64 = num; item->valuedouble=num;item->valueint=(int)num;}return item;}
 cJSON *cJSON_CreateString(const char *string)	{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_String;item->valuestring=cJSON_strdup(string);}return item;}
 cJSON *cJSON_CreateArray(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Array;return item;}
 cJSON *cJSON_CreateObject(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Object;return item;}
@@ -1986,7 +1986,7 @@ gettimeofday(struct timeval *tp, void *tzp)
 #endif
 
 // 获取当前系统的纳秒数
-int64_t ccgetcurnano() {
+ccint64 ccgetcurnano() {
     struct timeval tv;
     
     gettimeofday(&tv, NULL);
@@ -1994,14 +1994,14 @@ int64_t ccgetcurnano() {
 }
 
 // 获取当前系统的毫秒数
-int64_t ccgetcurtick() {
+ccint64 ccgetcurtick() {
     return ccgetcurnano()/1000;
 }
 
 // 获取系统的下一个唯一的事件纳秒数
-int64_t ccgetnextnano(){
-    static int64_t gseq = 0;
-    int64_t curseq = ccgetcurnano();
+ccint64 ccgetnextnano(){
+    static ccint64 gseq = 0;
+    ccint64 curseq = ccgetcurnano();
     if (curseq > gseq) {
         gseq = curseq;
     }else {

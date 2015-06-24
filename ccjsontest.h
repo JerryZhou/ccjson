@@ -208,7 +208,7 @@ SP_CASE(ccjson, eg4) {
 
 SP_CASE(ccjson, int64) {
     ccconfig *config = iccalloc(ccconfig);
-    config->ver64 = -1000 * (int64_t)INT_MAX;
+    config->ver64 = -1000 * (ccint64)INT_MAX;
     ccobjset(config, cctypeofmindex(ccconfig, ver64));
     char *unjson = iccunparse(config);
     print("unjson: %s\n", unjson);
@@ -449,11 +449,11 @@ SP_CASE(ccjson, cc_mem_cache) {
 SP_CASE(ccjson, benchmarktestcomplex) {
     config_app *app = iccalloc(config_app);
     char *json = cc_read_file("app.json");
-    int64_t cur = ccgetcurnano();
+    ccint64 cur = ccgetcurnano();
     for (int i=0; i<10000; ++i) {
         iccparse(app, json);
     }
-    int64_t since = ccgetcurnano() - cur;
+    ccint64 since = ccgetcurnano() - cur;
     print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
     iccfree(json);
     iccfree(app);
@@ -464,11 +464,11 @@ SP_CASE(ccjson, benchmarktestcomplexdisablememcache) {
     cc_enablememorycache(ccino);
     config_app *app = iccalloc(config_app);
     char *json = cc_read_file("app.json");
-    int64_t cur = ccgetcurnano();
+    ccint64 cur = ccgetcurnano();
     for (int i=0; i<10000; ++i) {
         iccparse(app, json);
     }
-    int64_t since = ccgetcurnano() - cur;
+    ccint64 since = ccgetcurnano() - cur;
     print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
     iccfree(json);
     iccfree(app);
@@ -480,11 +480,11 @@ SP_CASE(ccjson, benchmarktest) {
     ccconfig *config = iccalloc(ccconfig);
 
     const char* json = "{\"ver\":1, \"has\":null, \"noexits\": 1,  \"detail\":\"no details\", \"skips\":[1, null, 2]}";
-    int64_t cur = ccgetcurnano();
+    ccint64 cur = ccgetcurnano();
     for (int i=0; i<10000; ++i) {
         iccparse(config, json);
     }
-    int64_t since = ccgetcurnano() - cur;
+    ccint64 since = ccgetcurnano() - cur;
     print("Parase 10000 Json Obj Take %lld nanos(%.6fs)\n", since, 1.0 *since/1000/1000);
     iccfree(config);
     cc_mem_cache_clear();

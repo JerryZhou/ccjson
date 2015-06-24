@@ -35,6 +35,8 @@ extern "C" {
 // int64
 typedef signed long long ccint64;
 typedef unsigned long long ccuint64;
+typedef signed int ccint32;
+typedef unsigned int ccuint32;
 
 // ccibool
 typedef int ccibool;

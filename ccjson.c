@@ -223,13 +223,13 @@ CC_STATIC unsigned int dictIntHashFunction(unsigned int key)
     return key;
 }
 
-static uint32_t dict_hash_function_seed = 5381;
+static ccuint32 dict_hash_function_seed = 5381;
 
-CC_STATIC void dictSetHashFunctionSeed(uint32_t seed) {
+CC_STATIC void dictSetHashFunctionSeed(ccuint32 seed) {
     dict_hash_function_seed = seed;
 }
 
-CC_STATIC uint32_t dictGetHashFunctionSeed(void) {
+CC_STATIC ccuint32 dictGetHashFunctionSeed(void) {
     return dict_hash_function_seed;
 }
 
@@ -247,18 +247,18 @@ CC_STATIC uint32_t dictGetHashFunctionSeed(void) {
 CC_STATIC unsigned int dictGenHashFunction(const void *key, int len) {
     /* 'm' and 'r' are mixing constants generated offline.
      They're not really 'magic', they just happen to work well.  */
-    uint32_t seed = dict_hash_function_seed;
-    const uint32_t m = 0x5bd1e995;
+    ccuint32 seed = dict_hash_function_seed;
+    const ccuint32 m = 0x5bd1e995;
     const int r = 24;
 
     /* Initialize the hash to a 'random' value */
-    uint32_t h = seed ^ len;
+    ccuint32 h = seed ^ len;
 
     /* Mix 4 bytes at a time into the hash */
     const unsigned char *data = (const unsigned char *)key;
 
     while(len >= 4) {
-        uint32_t k = *(uint32_t*)data;
+        ccuint32 k = *(ccuint32*)data;
 
         k *= m;
         k ^= k >> r;

@@ -460,6 +460,32 @@ SP_CASE(ccjson, benchmarktestcomplex) {
     SP_TRUE(1);
 }
 
+SP_CASE(ccjson, havefun) 
+//void nouse()
+{
+    print("have fun begin \n");
+#define aw 10
+#define ah 1000
+    int (*a)[ah] = (int (*)[ah])malloc(sizeof(int)*aw*ah);
+ccint64 cur = 0;
+    print("have fun begin got memory\n");
+    cur = ccgetcurnano();
+    for (int j=0; j<ah; ++j) {
+        for (int i=0; i<aw; ++i) {
+            a[i][j] = i * j;
+        }
+    }
+    print("10000 * 100 takes %lld nanos\n", ccgetcurnano() - cur);
+
+    cur = ccgetcurnano();
+    for (int i=0; i<aw; ++i) {
+        for (int j=0; j<ah; ++j) {
+            a[i][j] = i * j;
+        }
+    }
+    print("100 * 10000 takes %lld nanos\n", ccgetcurnano() - cur);
+}
+
 SP_CASE(ccjson, benchmarktestcomplexdisablememcache) {
     cc_enablememorycache(ccino);
     config_app *app = iccalloc(config_app);

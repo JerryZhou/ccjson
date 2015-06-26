@@ -1485,20 +1485,20 @@ static char *print_number(cJSON *item)
 	if (fabs(((double)item->valueint)-d)<=DBL_EPSILON && d<=INT_MAX && d>=INT_MIN)
 	{
 		str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
-		if (str) sprintf(str,"%d",item->valueint);
+		if (str) snprintf(str, 21, "%d",item->valueint);
 	} else if (fabs(((double)item->valueint)-d)<=DBL_EPSILON && d>=INT_MAX) 
     {
         str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
-        if (str) sprintf(str,"%lld",item->valueint64);
+        if (str) snprintf(str,21, "%lld",item->valueint64);
     }
 	else
 	{
 		str=(char*)cJSON_malloc(64);	/* This is a nice tradeoff. */
 		if (str)
 		{
-			if (fabs(floor(d)-d)<=DBL_EPSILON && fabs(d)<1.0e60)sprintf(str,"%.0f",d);
-			else if (fabs(d)<1.0e-6 || fabs(d)>1.0e9)			sprintf(str,"%e",d);
-			else												sprintf(str,"%f",d);
+			if (fabs(floor(d)-d)<=DBL_EPSILON && fabs(d)<1.0e60)snprintf(str, 64, "%.0f",d);
+			else if (fabs(d)<1.0e-6 || fabs(d)>1.0e9)			snprintf(str, 64, "%e",d);
+			else												snprintf(str, 64, "%f",d);
 		}
 	}
 	return str;
@@ -1606,7 +1606,7 @@ static char *print_string_ptr(const char *str)
 				case '\n':	*ptr2++='n';	break;
 				case '\r':	*ptr2++='r';	break;
 				case '\t':	*ptr2++='t';	break;
-				default: sprintf(ptr2,"u%04x",token);ptr2+=5;	break;	/* escape and print */
+				default: snprintf(ptr2, len+3-(out-ptr2), "u%04x",token);ptr2+=5;	break;	/* escape and print */
 			}
 		}
 	}
@@ -1991,7 +1991,7 @@ gettimeofday(struct timeval *tp, void *tzp)
 }
 #endif
 
-// 获取当前系统的纳秒数
+// get current system time in nanos 
 ccint64 ccgetcurnano() {
     struct timeval tv;
     
@@ -1999,12 +1999,12 @@ ccint64 ccgetcurnano() {
     return tv.tv_sec*1000*1000 + tv.tv_usec;
 }
 
-// 获取当前系统的毫秒数
+// get current system time in millseconds
 ccint64 ccgetcurtick() {
     return ccgetcurnano()/1000;
 }
 
-// 获取系统的下一个唯一的事件纳秒数
+// alawys get the next nano of current
 ccint64 ccgetnextnano(){
     static ccint64 gseq = 0;
     ccint64 curseq = ccgetcurnano();
@@ -2016,12 +2016,12 @@ ccint64 ccgetnextnano(){
     return gseq;
 }
 
-// 内存标签项目
+// memory tag: will set in basic json object header
 #define __CC_JSON_OBJ  1 
 #define __CC_JSON_ARRAY 1<<1
 
 // ******************************************************************************
-// 文本缓冲区
+// basic memory system object
 typedef struct __cc_content {
     size_t flag;
     size_t size;
@@ -2031,18 +2031,18 @@ typedef struct __cc_content {
     char content[];
 }__cc_content;
 
-// 内部定义的对象
+// inherti the basic system object : like the array
 #define __internal_cc_content size_t flag; size_t size; struct __cc_content *next; struct __cc_content *pre; char content[]
 
-// 追寻内容的指针
+// make right basic memory system object pointer
 #define __to_content(p) (__cc_content*)((char*)p - sizeof(__cc_content))
 
-// 内存状态
+// statics about the memory state
 static size_t gmemalloc = 0;
 static size_t gmemfree = 0;
 static size_t gmemexpand = sizeof(__cc_content) + 1;
 
-// 打印内存状态
+// print the memory states
 size_t cc_mem_state() {
     printf("[CCJSON-Memory] malloc: %ld, free: %ld, hold: %ld\n", 
             gmemalloc, 
@@ -2051,12 +2051,12 @@ size_t cc_mem_state() {
     return gmemalloc - gmemfree;
 } 
 
-// 返回当前使用的内存总数
+// get current memory useage total size
 size_t cc_mem_size() {
     return gmemalloc-gmemfree;
 }
 
-//  申请文本缓存区域
+// memory alloc
 static char *__cc_alloc(size_t size) {
     __cc_content *content = (__cc_content*)calloc(1, size + gmemexpand);
     content->size = size;
@@ -2064,7 +2064,7 @@ static char *__cc_alloc(size_t size) {
     return content->content;
 }
 
-// 释放文本缓冲区
+// memory free
 static void __cc_free(char *c) {
     __cc_content *content;
     cccheck(c);
@@ -2073,7 +2073,7 @@ static void __cc_free(char *c) {
     free(content);
 }
 
-// 文本长度
+// memory len 
 static size_t __cc_len(char *c) {
     __cc_content *content;
     cccheckret(c, 0);
@@ -2081,34 +2081,34 @@ static size_t __cc_len(char *c) {
     return content->size;
 }
 
-// 设置标志位
+// set the memory object flag
 #define __cc_setflag(p, xflag)  do { \
     __cc_content *content = __to_content(p); \
     if (content) { content->flag |= xflag; } \
     } while(0) 
 
-// 判断是否符合标志位
+// judge the memory flag
 #define __cc_hasflag(p, xflag) (p && ((__to_content(p))->flag & xflag))
 
-// 清理标志位
+// clear the memory flag
 #define __cc_unsetflag(p, xflag)  do { \
     __cc_content *content = __to_content(p); \
     if (content) { content->flag &= ~xflag; } \
     } while(0) 
 
-// 内存缓冲区的最小大小
+// basic memory cache start size
 static const size_t __cc_isize = 4;
-// 构建一层内存反冲区域
+// basic memory cache layer 
 struct {
     size_t size;
     size_t capacity;
     size_t len;
     __cc_content *base;
 }gmemcache[14]; // 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768
-// 内存缓存的个数
+// basic memory cache count
 static const int gmemcachecount = sizeof(gmemcache)/sizeof(gmemcache[0]);
 
-// 初始化内存条
+// init the memory cache
 static void __ccinitmemcache() {
     static int init = 0;
     int i;
@@ -2124,14 +2124,14 @@ static void __ccinitmemcache() {
     }
 }
 
-// 打印内存状态
+// print the memory state
 static size_t __ccmemcachestate() {
     size_t memsize = 0;
     int i;
 
-    // 初始化
+    // init
     __ccinitmemcache();
-    // 打印内存缓冲区
+    // print memory cache
     printf("[CCJSON-Memory-Cache] count: %d\n", 
             gmemcachecount);
     for (i=0; i<gmemcachecount; ++i) {
@@ -2150,19 +2150,19 @@ static size_t __ccmemcachestate() {
     return memsize;
 }
 
-// 打印内存缓冲区当前状况，并返回当前缓冲区持有的内存总数
+// print the memory states, and return the memory size hold by caches
 size_t cc_mem_cache_state() {
     return __ccmemcachestate();
 }
 
-// 清理指定大小的缓冲区
+// clear the memory cache of index
 void cc_mem_cache_clearof(int index) {
-    // 初始化缓冲区
+    // init the memory cache
     __ccinitmemcache();
-    // 索引检查
+    // check if the index is illege 
     cccheck(index>=0 && index<gmemcachecount);
 
-    // 释放所有内存块
+    // free all memory cache with index
     while(gmemcache[index].base) {
         __cc_content* cache = gmemcache[index].base; 
         gmemcache[index].base = cache->next;
@@ -2173,7 +2173,7 @@ void cc_mem_cache_clearof(int index) {
     gmemcache[index].base = NULL;
 }
 
-// 清理所有缓冲区
+// clear all memory cache
 void cc_mem_cache_clear() {
     int i;
     for (i=0; i<gmemcachecount; ++i) {
@@ -2181,19 +2181,19 @@ void cc_mem_cache_clear() {
     }
 }
 
-// 索引所在缓冲区域的大小 
+// get the memory cache unit size by index 
 size_t cc_mem_cache_current(int index) {
     cccheckret(index>=0 && index<gmemcachecount, 0);
     return gmemcache[index].len;
 }
 
-// 索引所在缓冲区域的容量
+// get the memory cache capacity by index
 size_t cc_mem_cache_capacity(int index) {
     cccheckret(index>=0 && index<gmemcachecount, 0);
     return gmemcache[index].capacity; 
 }
 
-// 设置缓冲区的容量
+// set the memory capacity, set the capacity to 0 will disable the cache
 void cc_mem_cache_setcapacity(int index, size_t capacity) {
     cccheck(index>=0 && index<gmemcachecount);
     gmemcache[index].capacity = capacity;
@@ -2211,20 +2211,20 @@ static int __ccsizeindex(size_t size) {
     return index;
 }
 
-// 从缓冲区里面取一个
+// get a basic memory object from memory cache
 static char* cc_mem_alloc(size_t size) {
     int index;
     __cc_content* cache;
     char* mem;
 
-    // 初始化内存
+    // init the memory cache 
     __ccinitmemcache();
-    // 获取内存索引
+    // caculate the memory cache index
     index = __ccsizeindex(size);
     if (index < 0 || index >gmemcachecount) {
         return __cc_alloc(size);
     }
-    // 尝试从缓冲区获取
+    // if the memory cache have something
     if (gmemcache[index].base) {
         cache = gmemcache[index].base; 
 
@@ -2243,7 +2243,7 @@ static char* cc_mem_alloc(size_t size) {
         // return
         return cache->content;
     } else {
-        // 缓冲区没有直接new 一个
+        // the cache is empty, get one from the heap 
         mem = __cc_alloc(gmemcache[index].size);
         mem[size] = 0;
         return mem;
@@ -2255,15 +2255,15 @@ static void cc_mem_free(char *c) {
     int index;
 
     cccheck(c);
-    // 初始化缓冲区
+    // init memory cache 
     __ccinitmemcache();
-    // 获取内存块
+    // get the basic memery object pointer
     content = (__cc_content*)(c - sizeof(__cc_content));
     index = __ccsizeindex(content->size);
     if (index < 0 || index >gmemcachecount) {
         return __cc_free(c);
     }
-    // 尝试释放到缓冲区
+    // free basic memory object to cache
     if (gmemcache[index].len < gmemcache[index].capacity) {
         content->next = gmemcache[index].base;
         if (content->next) {
@@ -2275,15 +2275,15 @@ static void cc_mem_free(char *c) {
         gmemcache[index].base = content;
         ++gmemcache[index].len;
     }else {
-        // 直接释放
+        // the cache is full, juse return to heap
         __cc_free(c);
     }
 }
 
-// 是否开启内存缓冲区
+// the shuffter about the memory cache system
 ccibool ccenablememcache = cciyes;
 
-// 设置内存缓冲区，并返回设置前的状态
+// enable and disable the memory cache system 
 ccibool cc_enablememorycache(ccibool enable) {
     if (ccenablememcache != enable) {
         ccenablememcache = enable;
@@ -2291,7 +2291,8 @@ ccibool cc_enablememorycache(ccibool enable) {
     }
     return ccenablememcache;
 }
-//  申请文本缓存区域
+
+// memory alloc, all memory will end with 0,  call cc_free to free
 char *cc_alloc(size_t size) {
     if (ccenablememcache) {
         return cc_mem_alloc(size);
@@ -2300,7 +2301,7 @@ char *cc_alloc(size_t size) {
     }
 }
 
-// 释放文本缓冲区
+// free memory from cc_alloc
 void cc_free(char *c) {
     if (ccenablememcache) {
         cc_mem_free(c);
@@ -2309,12 +2310,12 @@ void cc_free(char *c) {
     }
 }
 
-// 文本长度
+// get the memory size(bytes)
 size_t cc_len(char *c) {
     return __cc_len(c);
 }
 
-// 生成一个填满字符缓冲区
+// make copy of string, and free memory with cc_free
 char *cc_dup(const char* src) {
     size_t len;
     char* content;
@@ -2327,7 +2328,7 @@ char *cc_dup(const char* src) {
 }
 
 // ******************************************************************************
-// 读取文本文件 
+// return the all content of file, need free with cc_free
 char * cc_read_file(const char* fn) {
     char *content = NULL;
     size_t filesize = 0;
@@ -2346,7 +2347,7 @@ char * cc_read_file(const char* fn) {
     return content;
 }
 
-// 写文件
+// write content to file, content must returned from cc_alloc, cc_dup, cc_read_file
 size_t cc_write_file(char* content, const char* fn) {
     size_t write = 0;
     FILE *file = fopen(fn, "w");
@@ -2358,18 +2359,18 @@ size_t cc_write_file(char* content, const char* fn) {
 }
 
 // ******************************************************************************
-// 自定义字典
+// self define the dict
 /* ----------------------- StringCopy Hash Table Type ------------------------*/
 
 static unsigned int _dictStringCopyHTHashFunction(const void *key)
 {
-    return dictGenHashFunction(key, (int)strlen(key));
+    return dictGenHashFunction(key, (int)strlen((char*)key));
 }
 
 static void *_dictStringDup(void *privdata, const void *key)
 {
-    size_t len = strlen(key);
-    char *copy = malloc(len+1);
+    size_t len = strlen((char*)key);
+    char *copy = (char*)malloc(len+1);
     DICT_NOTUSED(privdata);
     
     memcpy(copy, key, len);
@@ -2404,17 +2405,17 @@ static dictType xdictTypeHeapStringCopyKey = {
 };
 
 // ******************************************************************************
-// 数组 (可以加一点salt 在结构里面做校验)
+// array (maybe we will add some salts in struct)
 typedef struct ccjsonarray {
     size_t n;
     size_t nsize;
     ccjson_obj *obj0;
-    ccjson_obj *obj1; // 字节对齐
+    ccjson_obj *obj1; // bytes aligment 
 
     __internal_cc_content;
 }ccjsonarray;
 
-// 数组绑定的动态成员基本属性
+// array element basic json object 
 static ccjson_obj *_ccjsonobjallocdynamic(int index, size_t n) {
     ccjson_obj *obj = (ccjson_obj*)cc_alloc( sizeof(ccjson_obj) + 2*(n + 7)/8);
     obj->__index = index;
@@ -2448,7 +2449,8 @@ cctypemeta* ccarraymeta(void *array) {
 }
 
 /**
- * 一个数组需要存储他是否有这些项目，以及是否为NULL
+ * get the basic json object about array, 
+ * then we will do same thing in array as in json object 
  * */
 ccjson_obj* ccarrayobj(void *array) {
     ccjsonarray * p;
@@ -2478,7 +2480,7 @@ size_t ccarraylen(void *array) {
 }
 
 // ******************************************************************************
-// 根据名字找索引 {name : parse_value};
+// find meta by name {name : parse_value};
 static dict *gparses = NULL;
 static struct cctypemeta *gtypemetas[CCMaxTypeCount];
 static int gtypemetascnt = 0;
@@ -2486,7 +2488,7 @@ static int gtypemetascnt = 0;
 #define __ccobj(p) (ccjson_obj*)(p)
 
 /**
- * 获取成员的索引
+ * get member index 
  */
 int ccobjmindex(struct cctypemeta *meta, const char* member) {
     int idx = -1;
@@ -2510,7 +2512,7 @@ struct ccmembermeta * ccobjmmetabyindex(struct cctypemeta *meta, int index) {
     return meta->indexmembers[index];
 }
 
-// 获取成员个数
+// get member count of type with the meta
 int ccobjmcount(struct cctypemeta *meta) {
     cccheckret(meta, 0);
     return meta->membercount;
@@ -2541,7 +2543,7 @@ void ccobjunset(void *p, int index) {
    obj->__has[2*(index/8)] &= ~(1<<(index%8));
 }
 
-// 结构体成员为空的操作
+// the json object if null
 ccibool ccobjisnull(void *p, int index) {
     ccjson_obj *obj = __ccobj(p);
     return (obj->__has[1+2*(index/8)] & (1 << (index%8))) != 0;
@@ -2564,7 +2566,7 @@ void ccobjunsetnull(void *p, int index) {
    obj->__has[1+2*(index/8)] &= ~(1<<(index%8));
 }
 
-// 结构体成员操作
+// if the array have been filled the element at index
 ccibool ccarrayhas(void *p, int index) {
     ccjson_obj *ip = ccarrayobj(p);
     return ccobjhas(ip, index);
@@ -2584,7 +2586,7 @@ void ccarrayunset(void *p, int index) {
     ccobjunset(ip, index);
 }
 
-// 结构体成员为空的操作
+// if the element at index is null
 ccibool ccarrayisnull(void *p, int index) {
     ccjson_obj *ip = ccarrayobj(p);
     return ccobjisnull(ip, index);
@@ -2605,7 +2607,7 @@ void ccarrayunsetnull(void *p, int index) {
 }
 
 
-// 设置对象是否是Null
+// set object is null 
 void ccobjnullset(void *p, ccibool isnull) {
    ccjson_obj *obj;
    cccheck(p);
@@ -2618,7 +2620,7 @@ void ccobjnullset(void *p, ccibool isnull) {
 }
 
 
-// 判断对象是否是Null
+// if basic json object is null
 ccibool ccobjnullis(void *p) {
    ccjson_obj *obj;
    cccheckret(p, cciyes);
@@ -2626,7 +2628,7 @@ ccibool ccobjnullis(void *p) {
    return (obj->__flag & enumflagccjsonobj_null) != 0;
 }
 
-// 初始化字典
+// init the type dict 
 dict *ccgetparsedict() {
     if (gparses == NULL ) {
         gparses = dictCreate(&xdictTypeHeapStringCopyKey, NULL);
@@ -2634,7 +2636,7 @@ dict *ccgetparsedict() {
     return gparses;
 }
 
-// 加入一个类型
+// add a type in dict
 int ccaddtypemeta(cctypemeta *meta) {
     if (meta->index > 0) {
         return meta->index;
@@ -2654,19 +2656,19 @@ int ccinittypemeta(cctypemeta *meta) {
     return ccaddtypemeta(meta);
 }
 
-// 创建一个字典
+// make a dict
 dict *ccmakedict(cctypemeta *meta) {
    return dictCreate(&xdictTypeHeapStringCopyKey, meta);
 }
 
 /**
- * 造一个成员
- * name : 成员名字
- * type : 成员类型
- * offset : 成员在类型中的偏移
- * index : 成员的索引
- * compose : 是否是数组
- * TODO: 我们可以增加集中组合类型， list, map 等
+ * make a member meta object
+ * name : member name
+ * type : member type
+ * offset : member offset in type
+ * index : member index in type, index will be unique in one type
+ * compose : if the member is array or pointer, we only support array and pointer
+ * TODO: may be add support for: list, map, ...
  */
 ccmembermeta *ccmakemember(const char* name, const char* type, int offset, int index, int compose) {
     return ccmakememberwithmeta(name, ccgettypemeta(type), offset, index, compose);
@@ -2686,7 +2688,7 @@ ccmembermeta *ccmakememberwithmeta(const char* name,
     
 }
 
-// 向类型里面增加一项成员
+// add a member to type(meta)
 void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
     unsigned long size;
     size_t len;
@@ -2706,17 +2708,17 @@ void ccaddmember(cctypemeta *meta, ccmembermeta *member) {
         member->idx = (int)size + 1;
     }
     
-    // 加入字典
+    // add to dict 
     dictAdd((dict*)meta->members, (void*)member->name, member);
 
-    // 顺序查找
+    // find the index 
     len = ccarraylen(meta->indexmembers);
     if ((int)len > member->idx ) {
         meta->indexmembers[member->idx] = member;
     }
 }
 
-// 创建一个类型meta
+// make a type meta object
 cctypemeta *ccmaketypemeta(const char* type, size_t size) {
     cctypemeta* meta = (cctypemeta*)calloc(1, sizeof(cctypemeta));
     meta->size = size;
@@ -2725,7 +2727,7 @@ cctypemeta *ccmaketypemeta(const char* type, size_t size) {
     return meta;
 }
 
-// 查找某一个类型的元数据
+// find type meta by type name
 cctypemeta *ccgettypemeta(const char* type) {
     dictEntry *entry = dictFind(ccgetparsedict(), (void*)type);
     if (entry) {
@@ -2734,12 +2736,12 @@ cctypemeta *ccgettypemeta(const char* type) {
     return NULL;
 }
 
-// 查找某个类型的元信息
+// find type meta by type index
 cctypemeta *ccgettypemetaof(int index) {
     return gtypemetas[index];
 }
 
-// 从json 解析到结构体
+// serial the infromation from json , will fill all the data to value
 ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member) {
     // 解析
     ccibool has = ccino;
@@ -2759,6 +2761,7 @@ ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member
     // array require
     if (member && member->compose == enumflagcompose_array 
             && json->type != cJSON_Array) {
+        // so can not set the array be cJSON_NULL
         return has;
     }
     // point require
@@ -2766,6 +2769,7 @@ ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member
         pointvalue = (void**)value;
         if (*pointvalue == NULL ) {
             *pointvalue = cc_alloc(meta->size);
+            has = cciyes;
         }
         // deref
         value = *pointvalue;
@@ -2801,8 +2805,12 @@ ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member
                 *(ccnumber*)value = 0;
                 has = cciyes;
             }else {
-                // 其他都是ccjson_obj
+                // NB!!
+                // if the array will get returned before
+                // if the pointer will alloc the memory
+                // any other object should be ccjson_obj
                 ccobjnullset(value, cciyes);
+                has = cciyes;
             }
             break; }
         case cJSON_Number : {
@@ -2892,10 +2900,10 @@ ccibool ccparse(cctypemeta *meta, void *value, cJSON *json, ccmembermeta *member
     return has;
 }
 
-// 前置声明
+// forward declare
 ccibool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json);
 
-// 反向解析
+// unserial the json object to a json string, returned string neededcall cc_free to free the memory
 cJSON *ccunparse(cctypemeta *meta, void *value) {
     cJSON *obj = NULL;
     dictIterator *ite;
@@ -2911,7 +2919,7 @@ cJSON *ccunparse(cctypemeta *meta, void *value) {
     cccheckret(value, NULL);
     // be sure all the meta will be init before use
     ccinittypemeta(meta);
-    // 解析
+    // unserial
     if (meta->members) {
         if (ccobjnullis(value) ) {
             obj = cJSON_CreateNull();
@@ -2953,7 +2961,7 @@ cJSON *ccunparse(cctypemeta *meta, void *value) {
     return obj;
 }
 
-// 反解析
+// unserial a member
 ccibool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
     cctypemeta *meta;
 
@@ -3009,17 +3017,18 @@ ccibool ccunparsemember(ccmembermeta *mmeta, void *value, struct cJSON *json) {
     return cciyes;
 }
 
-// 释放成员
+// forward declare
 ccibool ccobjreleasemember(ccmembermeta *mmeta, void *value);
 
-// 释放结构体相关资源
+// release the memory hold by p with type meta
+// the json object that have been called from ccparsefrom need call this to free memory 
 void ccobjrelease(cctypemeta *meta, void *value) {
     dictIterator *ite;
     dictEntry *entry;
     ccmembermeta* member;
     ccstring * s;
 
-    // 解析
+    // release
     if (meta->members) {
         ite = dictGetIterator((dict*)meta->members);
         entry = dictNext(ite);
@@ -3049,7 +3058,7 @@ void ccobjrelease(cctypemeta *meta, void *value) {
     }
 }
 
-// 释放数组相关资源
+// release the memory hold by value with array type meta 
 void ccobjreleasearray(cctypemeta* meta, void *value) {
     int i, len;
     char *v;
@@ -3065,7 +3074,7 @@ void ccobjreleasearray(cctypemeta* meta, void *value) {
     }
 }
 
-// 反解析
+// release the member
 ccibool ccobjreleasemember(ccmembermeta *mmeta, void *value) {
     void **pointvalue;
     void **arrayvalue;
@@ -3101,7 +3110,7 @@ ccibool ccobjreleasemember(ccmembermeta *mmeta, void *value) {
     return cciyes;
 }
 
-// 从字符串解析
+// serial the infromation from json , will fill all the data to value
 ccibool ccparsefrom(cctypemeta *meta, void *value, const char *json) {
     ccibool ok = ccino;
     cJSON* cjson = cJSON_Parse(json);
@@ -3110,7 +3119,7 @@ ccibool ccparsefrom(cctypemeta *meta, void *value, const char *json) {
     return ok;
 }
 
-// 解析到字符串
+// unserial the json object to a json string, returned string neededcall cc_free to free the memory
 char *ccunparseto(cctypemeta *meta, void *value) {
     char *str = NULL;
     char *content = NULL;
@@ -3122,7 +3131,7 @@ char *ccunparseto(cctypemeta *meta, void *value) {
     return content;
 }
 
-// 设置meta索引
+// set the meta index in basic json object
 #define __cc_setmetaindex(p, index) do { \
     ccjson_obj* obj = (ccjson_obj*)p; \
     if(obj && obj->__index == index) { \
@@ -3130,7 +3139,7 @@ char *ccunparseto(cctypemeta *meta, void *value) {
     }} while(0)  
 
 // ******************************************************************************
-// 生成对象
+// helper: malloc a basic json object with type meta, we can call the ccjsonobjfree to free memories
 void *ccjsonobjalloc(cctypemeta* meta) {
     ccjson_obj *obj;
     ccinittypemeta(meta);
@@ -3141,7 +3150,7 @@ void *ccjsonobjalloc(cctypemeta* meta) {
     return obj;
 }
 
-// 释放对象拥有的资源
+// helper: free the memories holded by p, but not free p self
 void ccjsonobjrelease(void *p) {
     ccjson_obj *obj;
     cctypemeta *meta;
@@ -3152,7 +3161,7 @@ void ccjsonobjrelease(void *p) {
     ccobjrelease(meta, obj);
 }
 
-// 释放对象
+// helper: free the memories holded by p, and then free p self
 void ccjsonobjfree(void *p) {
     if (__cc_hasflag(p, __CC_JSON_OBJ) ) {
         ccjsonobjrelease(p);
@@ -3164,25 +3173,24 @@ void ccjsonobjfree(void *p) {
     }
 }
 
-
-// 从json序列化对象
+// helper: serial from json 
 ccibool ccjsonobjparsefrom(void *p, const char* json) {
     ccjson_obj *obj = (ccjson_obj*)p;
     cctypemeta *meta = ccgettypemetaof(obj->__index);
     return ccparsefrom(meta, p, json);
 }
 
-// 把对象序列化到json
+// helper: unserial to json
 char* ccjsonobjunparseto(void *p) {
     ccjson_obj *obj = (ccjson_obj*)p;
     cctypemeta *meta = ccgettypemetaof(obj->__index);
     return ccunparseto(meta, p);
 }
 
-// 实现基础对象
+// implement the basic json type
 // ******************************************************************************
 
-// 基础类型
+// basci types
 __ccimplementtype(ccint)
 __ccimplementtype(ccint64)
 __ccimplementtype(ccnumber)
@@ -3190,7 +3198,7 @@ __ccimplementtype(ccstring)
 __ccimplementtype(ccbool)
 
 
-// 声明复杂类型
+// implement the example the complex type
 __ccimplementtypebegin(ccconfig)
 __ccimplementmember(ccconfig, ccint, ver)
 __ccimplementmember(ccconfig, ccint64, ver64)

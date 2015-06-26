@@ -135,14 +135,16 @@ typedef enum enumflagccjsonobj {
     enumflagccjsonobj_null = 1,
 }enumflagccjsonobj;
 
+// basic json object
 #define _ccjson_obj(n) int __index; int __flag; char __has[2*((n+7)/8)]
 
 // basic cjson_obj
-typedef struct ccjson_obj {
-    int __index;
-    int __flag;
-    char __has[];
-}ccjson_obj;
+struct ccjson_obj;
+
+// get the basic information about ccjson_obj
+char ccjsonobjhas(void *obj, int index);
+int ccjsonobjindex(void *obj);
+int ccjsonobjflag(void *obj);
 
 // array operator
 // n    : array length
@@ -150,8 +152,8 @@ typedef struct ccjson_obj {
 // index: type meta index 
 void * ccarraymalloc(size_t n, size_t size, int index);
 void * ccarraymallocof(size_t n, cctypemeta* meta);
-cctypemeta* ccarraymeta(void *array);
-ccjson_obj* ccarrayobj(void *array);
+struct cctypemeta* ccarraymeta(void *array);
+struct ccjson_obj* ccarrayobj(void *array);
 void ccarrayfree(void *array);
 size_t ccarraylen(void *array);
 

@@ -35,13 +35,18 @@
 #   include <sys/time.h>
 #endif
 
-
 #include "ccjson.h"
 
 #ifdef WIN32
 static int random() {
     return rand();
 }
+
+// no warnings about the fopen_s, snprintf_s, bala bala in msvc
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #endif
 
 #define CC_STATIC static 
@@ -866,7 +871,7 @@ CC_STATIC unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int co
             /* Invariant of the dict.c rehashing: up to the indexes already
              * visited in ht[0] during the rehashing, there are no populated
              * buckets, so we can skip ht[0] for indexes between 0 and idx-1. */
-            if (tables == 2 && j == 0 && i < d->rehashidx) {
+            if (tables == 2 && j == 0 && i < (unsigned int)d->rehashidx) {
                 /* Moreover, if we are currently out of range in the second
                  * table, there will be no elements in both tables up to
                  * the current rehashing index, so we jump if possible.
@@ -1468,7 +1473,7 @@ static const char *parse_number(cJSON *item,const char *num)
 	}
 
 	n=sign*n*pow(10.0,(scale+subscale*signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
-    n64=sign*n64*pow(10, (subscale*signsubscale));
+    n64=(ccint64)(sign*n64*pow(10, (subscale*signsubscale)));
 	
 	item->valuedouble=n;
 	item->valueint=(int)n;
@@ -1907,7 +1912,7 @@ cJSON *cJSON_CreateTrue(void)					{cJSON *item=cJSON_New_Item();if(item)item->ty
 cJSON *cJSON_CreateFalse(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_False;return item;}
 cJSON *cJSON_CreateBool(int b)					{cJSON *item=cJSON_New_Item();if(item)item->type=b?cJSON_True:cJSON_False;return item;}
 cJSON *cJSON_CreateNumber(double num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valuedouble=num;item->valueint=(int)num;}return item;}
-cJSON *cJSON_CreateNumber64(ccint64 num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valueint64 = num; item->valuedouble=num;item->valueint=(int)num;}return item;}
+cJSON *cJSON_CreateNumber64(ccint64 num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valueint64 = num; item->valuedouble=(double)num;item->valueint=(int)num;}return item;}
 cJSON *cJSON_CreateString(const char *string)	{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_String;item->valuestring=cJSON_strdup(string);}return item;}
 cJSON *cJSON_CreateArray(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Array;return item;}
 cJSON *cJSON_CreateObject(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Object;return item;}
@@ -1983,10 +1988,10 @@ gettimeofday(struct timeval *tp, void *tzp)
     tm.tm_hour     = wtm.wHour;
     tm.tm_min     = wtm.wMinute;
     tm.tm_sec     = wtm.wSecond;
-    tm. tm_isdst    = -1;
+    tm.tm_isdst    = -1;
     clock = mktime(&tm);
-    tp->tv_sec = clock;
-    tp->tv_usec = wtm.wMilliseconds * 1000;
+    tp->tv_sec = (long)clock;
+    tp->tv_usec = (long)wtm.wMilliseconds * 1000;
     return (0);
 }
 #endif
@@ -2261,7 +2266,8 @@ static void cc_mem_free(char *c) {
     content = (__cc_content*)(c - sizeof(__cc_content));
     index = __ccsizeindex(content->size);
     if (index < 0 || index >gmemcachecount) {
-        return __cc_free(c);
+        __cc_free(c);
+        return;
     }
     // free basic memory object to cache
     if (gmemcache[index].len < gmemcache[index].capacity) {
@@ -2403,6 +2409,37 @@ static dictType xdictTypeHeapStringCopyKey = {
     _dictStringDestructor,         /* key destructor */
     NULL                           /* val destructor */
 };
+
+#ifdef WIN32
+// disable the warning about use the extend of zero size array in struct
+#pragma warning(disable: 4200)
+#endif
+
+// ******************************************************************************
+// basic json object
+typedef struct ccjson_obj {
+    int __index;
+    int __flag;
+    char __has[];
+}ccjson_obj;
+
+// basic information: has
+char ccjsonobjhas(void *obj, int index) {
+    ccjson_obj *iobj = (ccjson_obj*)obj;
+    return iobj->__has[index]; 
+}
+
+// basic information: index
+int ccjsonobjindex(void *obj) {
+    ccjson_obj *iobj = (ccjson_obj*)obj;
+    return iobj->__index;
+}
+
+// basic information: flag
+int ccjsonobjflag(void *obj) {
+    ccjson_obj *iobj = (ccjson_obj*)obj;
+    return iobj->__flag;
+}
 
 // ******************************************************************************
 // array (maybe we will add some salts in struct)

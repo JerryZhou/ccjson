@@ -309,24 +309,24 @@ SP_CASE(ccjson, arraymalloc) {
     
     ccarrayfree(array);
     ccjson_obj *arrayobj = ccarrayobj(array);
-    char c0 = arrayobj->__has[0];
-    char c1 = arrayobj->__has[1];
+    char c0 = ccjsonobjhas(arrayobj, 0);
+    char c1 = ccjsonobjhas(arrayobj, 1);
     
     SP_EQUAL(c0, 0);
     SP_EQUAL(c1, 0);
     
     ccarrayset(array, 0);
     
-    char cc0 = arrayobj->__has[0];
-    char cc1 = arrayobj->__has[1];
+    char cc0 = ccjsonobjhas(arrayobj, 0);
+    char cc1 = ccjsonobjhas(arrayobj, 1);
     
     SP_EQUAL(cc0, 1);
     SP_EQUAL(cc1, 0);
     
     ccarraysetnull(array, 1);
     
-    char ccc0 = arrayobj->__has[0];
-    char ccc1 = arrayobj->__has[1];
+    char ccc0 = ccjsonobjhas(arrayobj, 0);
+    char ccc1 = ccjsonobjhas(arrayobj, 1);
     
     SP_EQUAL(ccc0, 1);
     SP_EQUAL(ccc1, 2);

@@ -19,6 +19,12 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
+#ifdef WIN32
+// no warnings about the fopen_s, snprintf_s, bala bala in msvc
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+#endif
 
 #include <stdio.h>
 #include <memory.h>
@@ -41,12 +47,6 @@
 static int random() {
     return rand();
 }
-
-// no warnings about the fopen_s, snprintf_s, bala bala in msvc
-#ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #endif
 
 #define CC_STATIC static 
@@ -1490,20 +1490,20 @@ static char *print_number(cJSON *item)
 	if (fabs(((double)item->valueint)-d)<=DBL_EPSILON && d<=INT_MAX && d>=INT_MIN)
 	{
 		str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
-		if (str) snprintf(str, 21, "%d",item->valueint);
+		if (str) sprintf(str, "%d",item->valueint);
 	} else if (fabs(((double)item->valueint)-d)<=DBL_EPSILON && d>=INT_MAX) 
     {
         str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
-        if (str) snprintf(str,21, "%lld",item->valueint64);
+        if (str) sprintf(str, "%lld",item->valueint64);
     }
 	else
 	{
 		str=(char*)cJSON_malloc(64);	/* This is a nice tradeoff. */
 		if (str)
 		{
-			if (fabs(floor(d)-d)<=DBL_EPSILON && fabs(d)<1.0e60)snprintf(str, 64, "%.0f",d);
-			else if (fabs(d)<1.0e-6 || fabs(d)>1.0e9)			snprintf(str, 64, "%e",d);
-			else												snprintf(str, 64, "%f",d);
+			if (fabs(floor(d)-d)<=DBL_EPSILON && fabs(d)<1.0e60)sprintf(str, "%.0f",d);
+			else if (fabs(d)<1.0e-6 || fabs(d)>1.0e9)			sprintf(str, "%e",d);
+			else												sprintf(str, "%f",d);
 		}
 	}
 	return str;
@@ -1611,7 +1611,7 @@ static char *print_string_ptr(const char *str)
 				case '\n':	*ptr2++='n';	break;
 				case '\r':	*ptr2++='r';	break;
 				case '\t':	*ptr2++='t';	break;
-				default: snprintf(ptr2, len+3-(out-ptr2), "u%04x",token);ptr2+=5;	break;	/* escape and print */
+				default: sprintf(ptr2, "u%04x",token);ptr2+=5;	break;	/* escape and print */
 			}
 		}
 	}

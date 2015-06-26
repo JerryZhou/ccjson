@@ -31,6 +31,13 @@
 #ifndef __SIMPLETEST_H__
 #define __SIMPLETEST_H__
 
+#ifdef WIN32
+// no warnings about the fopen_s, snprintf_s, bala bala in msvc
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

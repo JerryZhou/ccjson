@@ -3,7 +3,7 @@
 //  cjson
 //
 //  Created by JerryZhou on 15/5/29.
-//  Copyright (c) 2015年 JerryZhou. All rights reserved.
+//  Copyright (c) 2015 JerryZhou. All rights reserved.
 //
 
 #ifndef cjson_ccjsontest_h

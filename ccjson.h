@@ -306,7 +306,7 @@ char* ccjsonobjunparseto(void *p);
         static struct cctypemeta cctypeofmetavar(mtype);\
         if (init == 0) {\
             init = 1;\
-            cctypeofmetavar(mtype).type=#mtype, \
+            cctypeofmetavar(mtype).type=cctypeofname(mtype), \
             cctypeofmetavar(mtype).size=sizeof(mtype), \
             cctypeofmetavar(mtype).members=NULL, \
             cctypeofmetavar(mtype).membercount = cctypeofmcount(mtype), \
@@ -357,7 +357,7 @@ char* ccjsonobjunparseto(void *p);
         static struct cctypemeta cctypeofmetavar(mtype);\
         if (init == 0) {\
             init = 1;\
-            cctypeofmetavar(mtype).type=#mtype, \
+            cctypeofmetavar(mtype).type=cctypeofname(mtype), \
             cctypeofmetavar(mtype).size=sizeof(mtype), \
             cctypeofmetavar(mtype).members=NULL, \
             cctypeofmetavar(mtype).membercount = cctypeofmcount(mtype), \

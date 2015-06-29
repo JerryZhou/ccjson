@@ -12,8 +12,6 @@
 // unit test
 #include "ccjsontest.h"
 
-#define cc_unused(v) (void)v
-
 int main(int argc, const char** argv){
     cc_unused(argc);
     cc_unused(argv);

@@ -50,6 +50,8 @@ typedef int ccibool;
 #define CCMaxMemberCount 64 
 // system support max type count
 #define CCMaxTypeCount 1000
+// used macro
+#define cc_unused(x) (void)x 
 
 // ******************************************************************************
 // get current system time in nanos 

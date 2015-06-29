@@ -1981,6 +1981,8 @@ gettimeofday(struct timeval *tp, void *tzp)
     time_t clock;
     struct tm tm;
     SYSTEMTIME wtm;
+    cc_unused(tzp);
+
     GetLocalTime(&wtm);
     tm.tm_year     = wtm.wYear - 1900;
     tm.tm_mon     = wtm.wMonth - 1;

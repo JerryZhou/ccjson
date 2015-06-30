@@ -39,6 +39,7 @@
 #   include <windows.h>
 #else
 #   include <sys/time.h>
+#   include <pthread.h>
 #endif
 
 #include "ccjson.h"
@@ -2049,25 +2050,57 @@ static size_t gmemalloc = 0;
 static size_t gmemfree = 0;
 static size_t gmemexpand = sizeof(__cc_content) + 1;
 
+// keep the thred safe for memory system
+#ifdef WIN32 
+static HANDLER _g_mem_mutex_get() {
+static HANDLER gmutex = 0;
+if (gmutex == 0) {
+    gmutex = ::CreateMutex(NULL, 0, NULL);
+}
+return gmutex;
+}
+#define __ccmemlock ::WaitForSingleObject(_g_mem_mutex_get())
+#define __ccmemunlock ::ReleaseMutex(_g_mem_mutex_get())
+#else
+static pthread_mutex_t *_g_mem_mutex_get() {
+static pthread_mutex_t mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER; 
+return &mutex;
+}
+#define __ccmemlock pthread_mutex_lock(_g_mem_mutex_get())
+#define __ccmemunlock pthread_mutex_unlock(_g_mem_mutex_get()) 
+#endif
+
 // print the memory states
 size_t cc_mem_state() {
+    __ccmemlock;
+    size_t hold = gmemalloc-gmemfree; 
     printf("[CCJSON-Memory] malloc: %ld, free: %ld, hold: %ld\n", 
             gmemalloc, 
             gmemfree, 
-            gmemalloc-gmemfree);
-    return gmemalloc - gmemfree;
+            hold);
+    __ccmemunlock;
+
+    return hold;
 } 
 
 // get current memory useage total size
 size_t cc_mem_size() {
-    return gmemalloc-gmemfree;
+    __ccmemlock;
+    size_t hold = gmemalloc-gmemfree; 
+    __ccmemunlock;
+
+    return hold;
 }
 
 // memory alloc
 static char *__cc_alloc(size_t size) {
     __cc_content *content = (__cc_content*)calloc(1, size + gmemexpand);
     content->size = size;
+
+    __ccmemlock;
     gmemalloc += (size + gmemexpand);
+    __ccmemunlock;
+
     return content->content;
 }
 
@@ -2076,7 +2109,11 @@ static void __cc_free(char *c) {
     __cc_content *content;
     cccheck(c);
     content = (__cc_content*)(c - sizeof(__cc_content));
+
+    __ccmemlock;
     gmemfree += (content->size + gmemexpand); 
+    __ccmemunlock;
+
     free(content);
 }
 
@@ -2123,12 +2160,14 @@ static void __ccinitmemcache() {
         return;
     }
     ++init;
+    __ccmemlock;
     for (i=0; i<gmemcachecount; ++i) {
         gmemcache[i].size = __cc_isize<<i;
         gmemcache[i].capacity = 100;
         gmemcache[i].len = 0;
         gmemcache[i].base = 0;
     }
+    __ccmemunlock;
 }
 
 // print the memory state
@@ -2141,6 +2180,7 @@ static size_t __ccmemcachestate() {
     // print memory cache
     printf("[CCJSON-Memory-Cache] count: %d\n", 
             gmemcachecount);
+    __ccmemlock;
     for (i=0; i<gmemcachecount; ++i) {
         printf("[CCJSON-Memory-Cache] ID: %d, "
                 "chuck size: %ld, "
@@ -2154,6 +2194,7 @@ static size_t __ccmemcachestate() {
                 gmemcache[i].len * gmemcache[i].size);
         memsize += gmemcache[i].len * gmemcache[i].size; 
     }
+    __ccmemunlock;
     return memsize;
 }
 
@@ -2170,6 +2211,7 @@ void cc_mem_cache_clearof(int index) {
     cccheck(index>=0 && index<gmemcachecount);
 
     // free all memory cache with index
+    __ccmemlock; 
     while(gmemcache[index].base) {
         __cc_content* cache = gmemcache[index].base; 
         gmemcache[index].base = cache->next;
@@ -2178,6 +2220,7 @@ void cc_mem_cache_clearof(int index) {
     }
     gmemcache[index].len = 0;
     gmemcache[index].base = NULL;
+    __ccmemunlock;
 }
 
 // clear all memory cache
@@ -2203,7 +2246,9 @@ size_t cc_mem_cache_capacity(int index) {
 // set the memory capacity, set the capacity to 0 will disable the cache
 void cc_mem_cache_setcapacity(int index, size_t capacity) {
     cccheck(index>=0 && index<gmemcachecount);
+    __ccmemlock;
     gmemcache[index].capacity = capacity;
+    __ccmemunlock;
 }
 
 // 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
@@ -2232,6 +2277,7 @@ static char* cc_mem_alloc(size_t size) {
         return __cc_alloc(size);
     }
     // if the memory cache have something
+    __ccmemlock; 
     if (gmemcache[index].base) {
         cache = gmemcache[index].base; 
 
@@ -2248,13 +2294,15 @@ static char* cc_mem_alloc(size_t size) {
         cache->flag = 0;
 
         // return
-        return cache->content;
+        mem = cache->content;
     } else {
         // the cache is empty, get one from the heap 
         mem = __cc_alloc(gmemcache[index].size);
         mem[size] = 0;
-        return mem;
     }
+    __ccmemunlock;
+
+    return mem;
 }
 
 static void cc_mem_free(char *c) {
@@ -2272,6 +2320,7 @@ static void cc_mem_free(char *c) {
         return;
     }
     // free basic memory object to cache
+    __ccmemlock; 
     if (gmemcache[index].len < gmemcache[index].capacity) {
         content->next = gmemcache[index].base;
         if (content->next) {
@@ -2282,10 +2331,11 @@ static void cc_mem_free(char *c) {
 
         gmemcache[index].base = content;
         ++gmemcache[index].len;
-    }else {
+    } else {
         // the cache is full, juse return to heap
         __cc_free(c);
     }
+    __ccmemunlock;
 }
 
 // the shuffter about the memory cache system
@@ -2293,11 +2343,17 @@ ccibool ccenablememcache = cciyes;
 
 // enable and disable the memory cache system 
 ccibool cc_enablememorycache(ccibool enable) {
+    ccibool ret = cciyes; 
+    __ccmemlock;
     if (ccenablememcache != enable) {
         ccenablememcache = enable;
-        return !ccenablememcache;
+        __ccmemunlock;
+        ret = !ccenablememcache;
+    } else {
+        ret =  ccenablememcache;
     }
-    return ccenablememcache;
+    __ccmemunlock;
+    return ret;
 }
 
 // memory alloc, all memory will end with 0,  call cc_free to free
@@ -2524,6 +2580,26 @@ static dict *gparses = NULL;
 static struct cctypemeta *gtypemetas[CCMaxTypeCount];
 static int gtypemetascnt = 0;
 
+// keep thread safe for meta system
+#ifdef WIN32
+static HANDLER _g_meta_mutex_get() {
+static HANDLER gmutex = 0;
+if (gmutex == 0) {
+    gmutex = ::CreateMutex(NULL, 0, NULL);
+}
+return gmutex;
+}
+#define __ccmetalock ::WaitForSingleObject(_g_meta_mutex_get())
+#define __ccmetaunlock ::ReleaseMutex(_g_meta_mutex_get())
+#else
+static pthread_mutex_t *_g_meta_mutex_get() {
+static pthread_mutex_t gmetamutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+return &gmetamutex;
+}
+#define __ccmetalock pthread_mutex_lock(_g_meta_mutex_get())
+#define __ccmetaunlock pthread_mutex_unlock(_g_meta_mutex_get())
+#endif
+
 #define __ccobj(p) (ccjson_obj*)(p)
 
 /**
@@ -2669,9 +2745,11 @@ ccibool ccobjnullis(void *p) {
 
 // init the type dict 
 dict *ccgetparsedict() {
+    __ccmetalock;
     if (gparses == NULL ) {
         gparses = dictCreate(&xdictTypeHeapStringCopyKey, NULL);
     }
+    __ccmetaunlock;
     return gparses;
 }
 
@@ -2680,10 +2758,13 @@ int ccaddtypemeta(cctypemeta *meta) {
     if (meta->index > 0) {
         return meta->index;
     }
+    __ccmetalock;
     meta->index = ++gtypemetascnt;
     
     dictAdd(ccgetparsedict(), (void*)meta->type, (void*)meta);
     gtypemetas[meta->index] = meta;
+    __ccmetaunlock;
+
     return meta->index;
 }
 
@@ -2768,11 +2849,15 @@ cctypemeta *ccmaketypemeta(const char* type, size_t size) {
 
 // find type meta by type name
 cctypemeta *ccgettypemeta(const char* type) {
+    cctypemeta *meta = NULL;
+    __ccmetalock;
     dictEntry *entry = dictFind(ccgetparsedict(), (void*)type);
     if (entry) {
-        return (cctypemeta*)entry->v.val;
+        meta = (cctypemeta*)entry->v.val;
     }
-    return NULL;
+    __ccmetaunlock;
+
+    return meta;
 }
 
 // find type meta by type index

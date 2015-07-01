@@ -2086,8 +2086,10 @@ size_t cc_mem_state() {
 
 // get current memory useage total size
 size_t cc_mem_size() {
+    size_t hold = 0;
+
     __ccmemlock;
-    size_t hold = gmemalloc-gmemfree; 
+    hold = gmemalloc-gmemfree; 
     __ccmemunlock;
 
     return hold;

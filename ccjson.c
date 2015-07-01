@@ -2052,15 +2052,15 @@ static size_t gmemexpand = sizeof(__cc_content) + 1;
 
 // keep the thred safe for memory system
 #ifdef WIN32 
-static HANDLER _g_mem_mutex_get() {
-static HANDLER gmutex = 0;
+static HANDLE _g_mem_mutex_get() {
+static HANDLE gmutex = 0;
 if (gmutex == 0) {
-    gmutex = ::CreateMutex(NULL, 0, NULL);
+    gmutex = CreateMutex(NULL, 0, NULL);
 }
 return gmutex;
 }
-#define __ccmemlock ::WaitForSingleObject(_g_mem_mutex_get())
-#define __ccmemunlock ::ReleaseMutex(_g_mem_mutex_get())
+#define __ccmemlock WaitForSingleObject(_g_mem_mutex_get(), 0)
+#define __ccmemunlock ReleaseMutex(_g_mem_mutex_get())
 #else
 static pthread_mutex_t *_g_mem_mutex_get() {
 static pthread_mutex_t mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER; 
@@ -2072,8 +2072,9 @@ return &mutex;
 
 // print the memory states
 size_t cc_mem_state() {
+    size_t hold = 0;
     __ccmemlock;
-    size_t hold = gmemalloc-gmemfree; 
+    hold = gmemalloc-gmemfree; 
     printf("[CCJSON-Memory] malloc: %ld, free: %ld, hold: %ld\n", 
             gmemalloc, 
             gmemfree, 
@@ -2582,15 +2583,15 @@ static int gtypemetascnt = 0;
 
 // keep thread safe for meta system
 #ifdef WIN32
-static HANDLER _g_meta_mutex_get() {
-static HANDLER gmutex = 0;
+static HANDLE _g_meta_mutex_get() {
+static HANDLE gmutex = 0;
 if (gmutex == 0) {
-    gmutex = ::CreateMutex(NULL, 0, NULL);
+    gmutex = CreateMutex(NULL, 0, NULL);
 }
 return gmutex;
 }
-#define __ccmetalock ::WaitForSingleObject(_g_meta_mutex_get())
-#define __ccmetaunlock ::ReleaseMutex(_g_meta_mutex_get())
+#define __ccmetalock WaitForSingleObject(_g_meta_mutex_get(), 0)
+#define __ccmetaunlock ReleaseMutex(_g_meta_mutex_get())
 #else
 static pthread_mutex_t *_g_meta_mutex_get() {
 static pthread_mutex_t gmetamutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
@@ -2850,8 +2851,10 @@ cctypemeta *ccmaketypemeta(const char* type, size_t size) {
 // find type meta by type name
 cctypemeta *ccgettypemeta(const char* type) {
     cctypemeta *meta = NULL;
+    dictEntry *entry = NULL;
+
     __ccmetalock;
-    dictEntry *entry = dictFind(ccgetparsedict(), (void*)type);
+    entry = dictFind(ccgetparsedict(), (void*)type);
     if (entry) {
         meta = (cctypemeta*)entry->v.val;
     }
